@@ -1,2 +1,2 @@
-# SewingPatternResizing
-Code to resize sewing patterns
+# Sewing Pattern Automation
+Code to generate sewing patterns and resize existing ones
