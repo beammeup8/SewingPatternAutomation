@@ -15,8 +15,8 @@ def convert_to_image(pdf_filename):
             image.save(fileName, 'PNG')
             fileNames.append(fileName)
             counter += 1
-        return fileNames
+        return fileNames, images
     else:
         fileName = file_name_root +'.png'
         images[0].save(fileName, 'PNG')
-        return [fileName]
+        return [fileName], images

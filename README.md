@@ -1,2 +1,2 @@
 # Sewing Pattern Automation
-Code to generate sewing patterns and resize existing ones
+Code to generate sewing patterns, as well as making it easier to work with existing ones
