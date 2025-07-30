@@ -7,6 +7,7 @@ from PIL import Image
 from io import BytesIO 
 from reportlab.lib.utils import ImageReader
 import time
+import os
 
 def divide_image(image, page_size):
   #TODO divide image up into a list of images
@@ -25,7 +26,10 @@ def export_multi_page_pdf(image, page_size):
   doc = canvas.Canvas("testFiles/test.pdf", pagesize=page_size)
   split_images = divide_image(image, page_size)
   for img in split_images:
-    drawn_size = doc.drawImage(convert_image(img), 0, 0, 1000, 1000)
+    file_name = convert_image(img)
+    drawn_size = doc.drawImage(file_name, 0, 0, 1000, 1000)
+    # The library will not accept a file in tmp, so this is the work around
+    os.remove(file_name)
     doc.showPage()
     print(drawn_size)
   doc.save()
