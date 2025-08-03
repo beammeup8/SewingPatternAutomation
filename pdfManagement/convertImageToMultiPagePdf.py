@@ -5,6 +5,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 import os
 import math
+import time
 
 REPORT_LAB_DPI = 72
 
@@ -30,7 +31,7 @@ def divide_image(image, page_size, image_size_inch):
   return pages
 
 def convert_image(numpy_img):
-  new_file_name = f"testFiles/tmp_image.png"
+  new_file_name = f"testFiles/tmp_image{time.time()}.png"
   cv.imwrite(new_file_name, numpy_img)
   return new_file_name
 
