@@ -42,7 +42,7 @@ def export_multi_page_pdf(image, page_size, image_size_inches):
   split_images = divide_image(image, page_size, image_size_inches)
   for img in split_images:
     file_name = convert_image(img)
-    drawn_size = doc.drawImage(file_name, 0, 0)
+    drawn_size = doc.drawImage(file_name, 0, 0, page_size[0], page_size[1])
     # The library will not accept a file in tmp, so this is the work around
     os.remove(file_name)
     doc.showPage()
