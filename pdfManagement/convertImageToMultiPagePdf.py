@@ -13,8 +13,8 @@ def divide_image(image, page_size, image_size_inch):
   pages = []
   image_dpi = image.shape[0]/image_size_inch[0]
   conversion_factor = image_dpi / REPORT_LAB_DPI
-  page_x = round(page_size[0] * conversion_factor)
-  page_y = round(page_size[1] * conversion_factor)
+  page_x = round((page_size[0] * image.shape[0])/(image_size_inch[0] * REPORT_LAB_DPI))
+  page_y = round((page_size[1] * image.shape[1])/(image_size_inch[1] * REPORT_LAB_DPI))
 
   print((page_x, page_y))
 
