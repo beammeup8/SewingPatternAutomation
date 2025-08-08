@@ -20,3 +20,7 @@ def convert_to_image(pdf_filename):
         fileName = file_name_root +'.png'
         images[0].save(fileName, 'PNG')
         return [fileName], images
+    
+if __name__ == "__main__":
+    filename = "testFiles/output.pdf"
+    convert_to_image(filename)

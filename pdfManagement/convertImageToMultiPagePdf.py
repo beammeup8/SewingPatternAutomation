@@ -10,25 +10,37 @@ import time
 REPORT_LAB_DPI = 72
 
 def divide_image(image, page_size, image_size_inch):
-  pages = []
-  image_dpi = image.shape[0]/image_size_inch[0]
-  conversion_factor = image_dpi / REPORT_LAB_DPI
-  page_x = round((page_size[0] * image.shape[0])/(image_size_inch[0] * REPORT_LAB_DPI))
-  page_y = round((page_size[1] * image.shape[1])/(image_size_inch[1] * REPORT_LAB_DPI))
 
-  print((page_x, page_y))
+    img_height_px, img_width_px, _ = image.shape
+    img_width_in, img_height_in = image_size_inch[0], image_size_inch[1]
 
-  x_page_count = math.ceil(image.shape[0]/page_x)
-  y_page_count = math.ceil(image.shape[1]/page_y)
+    # Calculate pixels per inch for the image
+    pixels_per_inch_x = img_width_px / img_width_in
+    pixels_per_inch_y = img_height_px / img_height_in
 
-  for x in range(x_page_count):
-    x_start = x * page_x
-    x_end = x_start + page_x
+    # Convert PDF page size from points to inches
+    page_width_in = page_size[0] / REPORT_LAB_DPI
+    page_height_in = page_size[1] / REPORT_LAB_DPI
+
+    # Calculate how many pixels fit on one PDF page
+    page_width_px = round(page_width_in * pixels_per_inch_x)
+    page_height_px = round(page_height_in * pixels_per_inch_y)
+
+    print(f"Page size in pixels: ({page_width_px}, {page_height_px})")
+
+    x_page_count = math.ceil(img_width_px / page_width_px)
+    y_page_count = math.ceil(img_height_px / page_height_px)
+
+    pages = []
     for y in range(y_page_count):
-      y_start = y * page_y
-      pages.append(image[x_start:x_end, y_start:y_start + page_y])
+        y_start = y * page_height_px
+        y_end = min(y_start + page_height_px, img_height_px)
+        for x in range(x_page_count):
+            x_start = x * page_width_px
+            x_end = min(x_start + page_width_px, img_width_px)
+            pages.append(image[y_start:y_end, x_start:x_end])
 
-  return pages
+    return pages
 
 def convert_image(numpy_img):
   new_file_name = f"testFiles/tmp_image{time.time()}.png"
@@ -50,7 +62,7 @@ def export_multi_page_pdf(image, page_size, image_size_inches):
   doc.save()
 
 if __name__ == "__main__":
-  image_file = 'testFiles/BodiceDartedSleeved_GH_A0_1105Upton.png'
+  image_file = 'testFiles/output.png'
   image = cv.imread(image_file)
   a0_inches = (33.1, 46.8)
 
