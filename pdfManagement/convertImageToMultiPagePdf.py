@@ -11,6 +11,8 @@ from string import ascii_uppercase as letters
 REPORT_LAB_DPI = 72
 BORDER_INCHES = 0.5
 BORDER_POINTS = int(BORDER_INCHES * REPORT_LAB_DPI)
+ALIGNMENT_MARK_LEN = 6
+LABEL_FONT_SIZE = 18
 
 def divide_image(image, page_size, image_size_inch):
 
@@ -49,6 +51,41 @@ def convert_image(numpy_img):
   cv.imwrite(new_file_name, numpy_img)
   return new_file_name
 
+def add_page_markings(doc, page_label, usable_width, usable_height, page_size):
+   # Draw border rectangle
+    doc.setStrokeColorRGB(0, 0, 0)
+    doc.setLineWidth(2)
+    doc.rect(BORDER_POINTS, BORDER_POINTS, usable_width, usable_height)
+
+    x_mid = BORDER_POINTS + usable_width / 2
+    y_mid = BORDER_POINTS + usable_height / 2
+
+    doc.saveState()
+    doc.setFont("Helvetica-Bold", LABEL_FONT_SIZE)
+    doc.setFillColorRGB(0.85, 0.85, 0.85)
+
+    # Draw alignment marks
+    # Top center
+    top_edge_y = page_size[1] - BORDER_POINTS
+    doc.line(x_mid, top_edge_y - ALIGNMENT_MARK_LEN, x_mid, top_edge_y + ALIGNMENT_MARK_LEN)
+    doc.drawCentredString(x_mid, top_edge_y + ALIGNMENT_MARK_LEN + LABEL_FONT_SIZE/2, page_label)
+    
+    # Bottom center
+    doc.line(x_mid, BORDER_POINTS - ALIGNMENT_MARK_LEN, x_mid, BORDER_POINTS + ALIGNMENT_MARK_LEN)
+    doc.drawCentredString(x_mid, BORDER_POINTS - ALIGNMENT_MARK_LEN - LABEL_FONT_SIZE, page_label)
+    
+    # Left center
+    doc.line(BORDER_POINTS + ALIGNMENT_MARK_LEN, y_mid, BORDER_POINTS - ALIGNMENT_MARK_LEN, y_mid)
+    doc.drawCentredString(BORDER_POINTS - LABEL_FONT_SIZE, y_mid, page_label)
+
+    # Right center
+    right_edge_x = page_size[0] - BORDER_POINTS
+    doc.line(right_edge_x - ALIGNMENT_MARK_LEN, y_mid, right_edge_x + ALIGNMENT_MARK_LEN, y_mid)
+    doc.drawCentredString(right_edge_x + LABEL_FONT_SIZE, y_mid, page_label)
+
+
+    doc.restoreState()
+
 def export_multi_page_pdf(image, page_size, image_size_inches):
   print(page_size)
   print(image.shape)
@@ -76,10 +113,10 @@ def export_multi_page_pdf(image, page_size, image_size_inches):
        current_page_x += 1
 
     file_name = convert_image(img)
-    doc.setStrokeColorRGB(0, 0, 0)
-    doc.setLineWidth(2)
-    doc.rect(BORDER_POINTS, BORDER_POINTS, usable_width, usable_height)
+
     doc.drawImage(file_name, BORDER_POINTS, BORDER_POINTS, usable_width, usable_height)
+    add_page_markings(doc, f"{current_letter}{current_page_x}", usable_width, usable_height, page_size)
+    
     # The library will not accept a file in tmp, so this is the work around
     os.remove(file_name)
     doc.showPage()
