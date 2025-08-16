@@ -8,6 +8,8 @@ import math
 import time
 
 REPORT_LAB_DPI = 72
+BORDER_INCHES = 0.5
+BORDER_POINTS = int(BORDER_INCHES * REPORT_LAB_DPI)
 
 def divide_image(image, page_size, image_size_inch):
 
@@ -25,8 +27,6 @@ def divide_image(image, page_size, image_size_inch):
     # Calculate how many pixels fit on one PDF page
     page_width_px = round(page_width_in * pixels_per_inch_x)
     page_height_px = round(page_height_in * pixels_per_inch_y)
-
-    print(f"Page size in pixels: ({page_width_px}, {page_height_px})")
 
     x_page_count = math.ceil(img_width_px / page_width_px)
     y_page_count = math.ceil(img_height_px / page_height_px)
@@ -50,12 +50,17 @@ def convert_image(numpy_img):
 def export_multi_page_pdf(image, page_size, image_size_inches):
   print(page_size)
   print(image.shape)
+  usable_width = page_size[0] - 2 * BORDER_POINTS
+  usable_height = page_size[1] - 2 * BORDER_POINTS
 
   doc = canvas.Canvas("testFiles/test.pdf", pagesize=page_size)
-  split_images = divide_image(image, page_size, image_size_inches)
+  split_images = divide_image(image, (usable_width, usable_height), image_size_inches)
   for img in split_images:
     file_name = convert_image(img)
-    drawn_size = doc.drawImage(file_name, 0, 0, page_size[0], page_size[1])
+    doc.setStrokeColorRGB(0, 0, 0)
+    doc.setLineWidth(2)
+    doc.rect(BORDER_POINTS, BORDER_POINTS, usable_width, usable_height)
+    doc.drawImage(file_name, BORDER_POINTS, BORDER_POINTS, usable_width, usable_height)
     # The library will not accept a file in tmp, so this is the work around
     os.remove(file_name)
     doc.showPage()
