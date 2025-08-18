@@ -13,7 +13,8 @@ def extract_text(piece):
 if __name__ == "__main__":
   from getIndividualPieces import find_pieces_from_image_file
   filename = "testFiles/BodicePrincessSleeved_GH_A0_1105Upton.png"
-  pieces = find_pieces_from_image_file(filename)
+  a0_inches = (33.1, 46.8)
+  pieces = find_pieces_from_image_file(filename, a0_inches)
   print(len(pieces))
   cnt = 0
   for image in pieces:

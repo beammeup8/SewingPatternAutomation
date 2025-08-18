@@ -6,11 +6,11 @@ import numpy as np
 threshold = 200
 min_bound_size = 100
 
-def find_pieces_from_image_file(imageFile):
+def find_pieces_from_image_file(imageFile, imageSize):
     image = cv.imread(imageFile)
-    return find_pieces(image)
+    return find_pieces(image, imageSize)
 
-def find_pieces(image):
+def find_pieces(image, totalSize):
     assert image is not None, "image is not instantiated"
 
     grey = cv.cvtColor(image,cv.COLOR_BGR2GRAY)
@@ -28,14 +28,18 @@ def find_pieces(image):
         contours_poly[i] = cv.approxPolyDP(c, 3, True)
         boundRect[i] = cv.boundingRect(contours_poly[i])
 
-    pieces = get_bounded_areas(contours_poly, boundRect, image, morph)
+    pieces = get_bounded_areas(contours_poly, boundRect, image, totalSize)
     return pieces
 
-def get_bounded_areas(contours, boundRect, image, processed):
+
+def get_bounded_areas(contours, boundRect, image, totalSize):
     pieces = []
     mask_color = (255, 255, 255)
-    color = (0, 255, 0)
     blank_image = np.zeros(image.shape[:2], dtype=np.uint8)
+
+    img_h_px, img_w_px, _ = image.shape
+    total_w_in, total_h_in = totalSize
+
     for i in range(len(contours)):
         x,y,w,h = boundRect[i]
         mask = blank_image.copy()
@@ -43,17 +47,20 @@ def get_bounded_areas(contours, boundRect, image, processed):
         masked = cv.bitwise_and(image, image, mask=mask)
         masked[mask==0] = mask_color
         cropped = masked[y:y+h, x:x+w]
-        pieces.append(cropped)
+        width_in = (w / img_w_px) * total_w_in
+        height_in = (h / img_h_px) * total_h_in
+        pieces.append((cropped, (width_in, height_in)))
     return pieces
 
 if __name__ == "__main__":
-    image_file = 'testFiles/5oo4-Riptide-Reversible-Shorties-A0-Pattern-Pieces.png'
+    image_file = 'testFiles/BodiceDartedSleeved_GH_A0_1105Upton.png'
     image = cv.imread(image_file)
-    pieces = find_pieces(image)
+    a0_inches = (33.1, 46.8)
+    pieces = find_pieces(image, a0_inches)
     import os
     path, fileName = os.path.split(image_file)
     counter = 1
-    for image in pieces:
+    for image, _ in pieces:
         pieceFileName = path + "/piece" + str(counter) + "_" + fileName
         cv.imwrite(pieceFileName, image)
         counter += 1

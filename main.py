@@ -19,11 +19,11 @@ def runProcessing(dirPath):
   
   pieces = []
 
-  for imageFile in imageFiles:
-    pieces.extend(find_pieces_from_image_file(imageFile))
+  for imageFile, size in imageFiles:
+    pieces.extend(find_pieces_from_image_file(imageFile, total_size))
 
   for image in pieces:
-    export_multi_page_pdf(image, letter)
+    export_multi_page_pdf(image, letter, size)
 
 
 runProcessing("testFiles")
