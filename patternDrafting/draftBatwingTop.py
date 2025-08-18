@@ -3,6 +3,9 @@
 import cv2 as cv
 import numpy as np
 
+from drafting_util import *
+
+
 COLOR = (255, 255, 255)
 BODY_COLOR = (255, 0, 0)
 DRAFTING_COLOR = (0, 255, 0)
@@ -27,16 +30,16 @@ def draft(measurements, garment_specs):
 
   garm_length = measurements['shoulder to waist'] + measurements['waist to hip'] - garment_specs['height above hip']
   front_hem_point = front_top_y + scale(garm_length)
-  cv.line(img, (center_x, front_top_y), (center_x, front_hem_point), COLOR, THICKNESS)
-  
+  draw_vertical_line(img, center_x, front_top_y, front_hem_point, COLOR, THICKNESS)
+
   back_top_y = spacing + front_hem_point
   back_hem_point = back_top_y + scale(garm_length)
-  cv.line(img, (center_x, back_top_y), (center_x, back_hem_point), COLOR, THICKNESS)
-  
+  draw_vertical_line(img, center_x, back_top_y, back_hem_point, COLOR, THICKNESS)
+ 
   # shoulder line
   shoulder_x = center_x + scale(measurements['shoulders']/2)
-  cv.line(img, (center_x, front_top_y), (shoulder_x, front_top_y), BODY_COLOR, THICKNESS)
-
+  draw_horizantal_line(img, front_top_y, center_x, shoulder_x, BODY_COLOR, THICKNESS)
+  
   # bust line
   bust_x = center_x + scale(measurements['bust']/4)
   bust_y = front_top_y + scale(measurements['shoulder to bust'])
@@ -56,6 +59,9 @@ def draft(measurements, garment_specs):
   sleeve_edge_x = center_x + scale(garment_specs['sleeve length'] + measurements['shoulders']/2)
   sleeve_edge_y = round((front_top_y + scale(measurements['shoulder to bust']))/2)
   cv.line(img, (center_x, sleeve_edge_y), (sleeve_edge_x, sleeve_edge_y), DRAFTING_COLOR, THICKNESS)
+
+  # Body Curve
+  draw__smooth_curve(img, [(bust_x, bust_y), (waist_x, waist_y), (hip_x, hip_y)], BODY_COLOR, THICKNESS)
 
   return img, (total_x/ SCALE, total_y/ SCALE)
 
