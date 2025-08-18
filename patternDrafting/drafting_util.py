@@ -15,24 +15,20 @@ def draw_curve(img, x_points, y_points, color, thickness):
 
 def draw__smooth_curve(img, points, color, thickness):
   if len(points) <= 2:
-    return  # Not enough points to draw a curve
+    # This should be a line or a point
+    return 
 
   # Choose spline degree based on number of points
-  k = min(3, len(points) - 1)
+  k = len(points) - 1
   
   points = np.array(points)
-  t = np.arange(len(points))  # parameter: just the index
+  t = np.arange(len(points))
 
-  # Parametric splines for x(t) and y(t)
-
-  t_smooth = np.linspace(t.min(), t.max(), 500)
+  steps = np.linspace(t.min(), t.max(), 500)
   fx = make_interp_spline(t, points[:, 0], k=k)
   fy = make_interp_spline(t, points[:, 1], k=k)
 
-  x_smooth = fx(t_smooth)
-  y_smooth = fy(t_smooth)
-
-  draw_curve(img, x_smooth, y_smooth, color, thickness)
+  draw_curve(img, fx(steps), fy(steps), color, thickness)
 
 
 # v-necks are actually a slight curve, so this is a steep quadratic function
