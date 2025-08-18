@@ -24,13 +24,16 @@ def draft(measurements, garment_specs):
   img = np.zeros((total_x, total_y, 3), dtype=np.uint8)
 
   spacing = scale(BOARDER)
+
   # Draw drafting lines
   center_x = spacing
   front_top_y = spacing
 
   garm_length = measurements['shoulder to waist'] + measurements['waist to hip'] - garment_specs['height above hip']
   front_hem_point = front_top_y + scale(garm_length)
-  draw_vertical_line(img, center_x, front_top_y, front_hem_point, COLOR, THICKNESS)
+  front_neck_point = front_top_y + scale(garment_specs['front neckline depth'])
+  draw_vertical_line(img, center_x, front_top_y, front_hem_point, BODY_COLOR, THICKNESS)
+  draw_vertical_line(img, center_x, front_neck_point, front_hem_point, COLOR, THICKNESS)
 
   back_top_y = spacing + front_hem_point
   back_hem_point = back_top_y + scale(garm_length)
@@ -39,6 +42,14 @@ def draft(measurements, garment_specs):
   # shoulder line
   shoulder_x = center_x + scale(measurements['shoulders']/2)
   draw_horizantal_line(img, front_top_y, center_x, shoulder_x, BODY_COLOR, THICKNESS)
+
+  # neckline
+  draw_v_neckline(img, (center_x, front_neck_point), (scale(garment_specs['neckline radius']), front_top_y), COLOR, THICKNESS)
+
+  # upper bust line
+  upper_bust_x = center_x + scale(measurements['upper bust']/4)
+  upper_bust_y = front_top_y + scale(measurements['shoulder to armpit'])
+  draw_horizantal_line(img, upper_bust_y, center_x, upper_bust_x, BODY_COLOR, THICKNESS)
   
   # bust line
   bust_x = center_x + scale(measurements['bust']/4)
@@ -49,6 +60,11 @@ def draft(measurements, garment_specs):
   waist_x = center_x + scale(measurements['waist']/4)
   waist_y = front_top_y + scale(measurements['shoulder to waist'])
   cv.line(img, (center_x, waist_y), (waist_x, waist_y), BODY_COLOR, THICKNESS)
+
+  # high hip line
+  high_hip_x = center_x + scale(measurements['high hip']/4)
+  high_hip_y = front_top_y + scale(measurements['shoulder to waist'] + measurements['waist to high hip'])
+  draw_horizantal_line(img, high_hip_y, center_x, high_hip_x, BODY_COLOR, THICKNESS)
 
   # hip line
   hip_x = center_x + scale(measurements['hip']/4)
@@ -61,7 +77,7 @@ def draft(measurements, garment_specs):
   cv.line(img, (center_x, sleeve_edge_y), (sleeve_edge_x, sleeve_edge_y), DRAFTING_COLOR, THICKNESS)
 
   # Body Curve
-  draw__smooth_curve(img, [(bust_x, bust_y), (waist_x, waist_y), (hip_x, hip_y)], BODY_COLOR, THICKNESS)
+  draw__smooth_curve(img, [(upper_bust_x, upper_bust_y), (bust_x, bust_y), (waist_x, waist_y), (high_hip_x, high_hip_y), (hip_x, hip_y)], BODY_COLOR, THICKNESS)
 
   return img, (total_x/ SCALE, total_y/ SCALE)
 
@@ -69,12 +85,16 @@ def draft(measurements, garment_specs):
 
 if __name__ == "__main__":
   measurements = {}
+  measurements['upper bust'] = 49
   measurements['bust'] = 56
   measurements['waist'] = 45
+  measurements['high hip'] = 54
   measurements['hip'] = 56
   measurements['shoulders'] = 19
+  measurements['shoulder to armpit'] = 10
   measurements['shoulder to bust'] = 12
   measurements['shoulder to waist'] = 18
+  measurements['waist to high hip'] = 6
   measurements['waist to hip'] = 10
   measurements['above elbow circumference'] = 16
 
