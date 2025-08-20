@@ -44,8 +44,9 @@ def draft(measurements, garment_specs):
   draw_horizantal_line(img, front_top_y, center_x, shoulder_x, BODY_COLOR, THICKNESS)
 
   # neckline
+  
   draw_square_neckline(img, center_x, scale(garment_specs['front neckline depth']), front_top_y, scale(garment_specs['neckline radius']), COLOR, THICKNESS)
-  draw_v_neckline(img, (center_x, front_neck_point), (scale(garment_specs['neckline radius']), front_top_y), COLOR, THICKNESS)
+  draw_v_neckline(img, center_x, front_neck_point, scale(garment_specs['neckline radius']), front_top_y, COLOR, THICKNESS)
 
   # upper bust line
   upper_bust_x = center_x + scale(measurements['upper bust']/4)
@@ -102,7 +103,7 @@ if __name__ == "__main__":
   garment_specs = {}
   garment_specs['sleeve length'] = 8
   garment_specs['height above hip'] = 1
-  garment_specs['front neckline depth'] = 4.5
+  garment_specs['front neckline depth'] = 4
   garment_specs['back neckline depth'] = 2
   garment_specs['neckline radius'] = 7
   garment_specs['waist ease'] = 1
