@@ -4,6 +4,7 @@ import cv2 as cv
 import numpy as np
 
 from drafting_util import *
+from necklines import *
 
 BACKGROUND_COLOR = (0, 0, 0)
 LINE_COLOR = (255, 255, 255)
@@ -13,7 +14,6 @@ THICKNESS = 10
 SCALE = 100
 BOARDER = 2
 
-
 def scale(inches):
   return round(SCALE * inches)
 
@@ -22,7 +22,7 @@ def draft(measurements, garment_specs):
   total_x = 5000
   total_y = 10000
 
-  img = np.full((total_x, total_y, 3), BACKGROUND_COLOR, dtype=np.uint8)
+  img = np.full((total_y, total_x, 3), BACKGROUND_COLOR, dtype=np.uint8)
 
   spacing = scale(BOARDER)
 
@@ -112,6 +112,7 @@ if __name__ == "__main__":
 
 
   img,size = draft(measurements, garment_specs)
+  print(size)
   cv.imwrite("testFiles/batwingDraft.png", img)
 
 
