@@ -5,23 +5,24 @@ import numpy as np
 
 from drafting_util import *
 
-
-COLOR = (255, 255, 255)
+BACKGROUND_COLOR = (0, 0, 0)
+LINE_COLOR = (255, 255, 255)
 BODY_COLOR = (255, 0, 0)
 DRAFTING_COLOR = (0, 255, 0)
 THICKNESS = 10
 SCALE = 100
 BOARDER = 2
 
+
 def scale(inches):
   return round(SCALE * inches)
 
 
 def draft(measurements, garment_specs):
-  total_x = 10000
+  total_x = 5000
   total_y = 10000
 
-  img = np.zeros((total_x, total_y, 3), dtype=np.uint8)
+  img = np.full((total_x, total_y, 3), BACKGROUND_COLOR, dtype=np.uint8)
 
   spacing = scale(BOARDER)
 
@@ -33,20 +34,20 @@ def draft(measurements, garment_specs):
   front_hem_point = front_top_y + scale(garm_length)
   front_neck_point = front_top_y + scale(garment_specs['front neckline depth'])
   draw_vertical_line(img, center_x, front_top_y, front_hem_point, BODY_COLOR, THICKNESS)
-  draw_vertical_line(img, center_x, front_neck_point, front_hem_point, COLOR, THICKNESS)
+  draw_vertical_line(img, center_x, front_neck_point, front_hem_point, LINE_COLOR, THICKNESS)
 
   back_top_y = spacing + front_hem_point
   back_hem_point = back_top_y + scale(garm_length)
-  draw_vertical_line(img, center_x, back_top_y, back_hem_point, COLOR, THICKNESS)
+  draw_vertical_line(img, center_x, back_top_y, back_hem_point, LINE_COLOR, THICKNESS)
  
   # shoulder line
   shoulder_x = center_x + scale(measurements['shoulders']/2)
   draw_horizantal_line(img, front_top_y, center_x, shoulder_x, BODY_COLOR, THICKNESS)
 
   # neckline
-  
-  draw_square_neckline(img, center_x, scale(garment_specs['front neckline depth']), front_top_y, scale(garment_specs['neckline radius']), COLOR, THICKNESS)
-  draw_v_neckline(img, center_x, front_neck_point, scale(garment_specs['neckline radius']), front_top_y, COLOR, THICKNESS)
+
+  draw_square_neckline(img, center_x, scale(garment_specs['front neckline depth']), front_top_y, scale(garment_specs['neckline radius']), LINE_COLOR, THICKNESS)
+  draw_v_neckline(img, center_x, front_neck_point, scale(garment_specs['neckline radius']), front_top_y, LINE_COLOR, THICKNESS)
 
   # upper bust line
   upper_bust_x = center_x + scale(measurements['upper bust']/4)
@@ -103,7 +104,7 @@ if __name__ == "__main__":
   garment_specs = {}
   garment_specs['sleeve length'] = 8
   garment_specs['height above hip'] = 1
-  garment_specs['front neckline depth'] = 4
+  garment_specs['front neckline depth'] = 7
   garment_specs['back neckline depth'] = 2
   garment_specs['neckline radius'] = 7
   garment_specs['waist ease'] = 1
