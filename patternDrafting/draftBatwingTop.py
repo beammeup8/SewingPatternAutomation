@@ -74,10 +74,18 @@ def draft(measurements, garment_specs):
   hip_y = front_top_y + scale(measurements['shoulder to waist'] + measurements['waist to hip'])
   cv.line(img, (center_x, hip_y), (hip_x, hip_y), BODY_COLOR, THICKNESS)
 
-  # Sleeve Line
+  # Sleeve Lines
   sleeve_edge_x = center_x + scale(garment_specs['sleeve length'] + measurements['shoulders']/2)
-  sleeve_edge_y = round((front_top_y + scale(measurements['shoulder to bust']))/2)
+  armpit_depth = scale(measurements['shoulder to bust'])
+  sleeve_edge_y = round((front_top_y + armpit_depth)/2)
   cv.line(img, (center_x, sleeve_edge_y), (sleeve_edge_x, sleeve_edge_y), DRAFTING_COLOR, THICKNESS)
+
+  neckline_outside_x = center_x + scale(garment_specs['neckline radius'])
+
+  draw_horizantal_line(img, front_top_y, neckline_outside_x, shoulder_x, LINE_COLOR, THICKNESS)
+  # TODO Figure out how to calculate the angle
+  draw_line_at_angle(img, shoulder_x, front_top_y, 15, sleeve_edge_x, LINE_COLOR, THICKNESS)
+
 
   # Body Curve
   draw__smooth_curve(img, [(upper_bust_x, upper_bust_y), (bust_x, bust_y), (waist_x, waist_y), (high_hip_x, high_hip_y), (hip_x, hip_y)], BODY_COLOR, THICKNESS)

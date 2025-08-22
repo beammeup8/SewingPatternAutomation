@@ -1,5 +1,6 @@
 import cv2 as cv
 import numpy as np
+import math
 from scipy.interpolate import make_interp_spline
 
 def draw_horizantal_line(img, y, start_x, end_x, color, thickness):
@@ -7,6 +8,12 @@ def draw_horizantal_line(img, y, start_x, end_x, color, thickness):
 
 def draw_vertical_line(img, x, start_y, end_y, color, thickness):
   cv.line(img, (x, start_y), (x, end_y), color, thickness)
+
+def draw_line_at_angle(img, start_x, start_y, angle, end_x, color, thickness):
+  angle = math.radians(angle)
+  end_y = start_y + round(math.tan(angle) * (end_x - start_x))
+  print(end_x, end_y)
+  cv.line(img, (start_x, start_y), (end_x, end_y), color, thickness)
 
 def draw_curve(img, x_points, y_points, color, thickness):
   points = np.stack((x_points, y_points), axis=-1).astype(np.int32)
