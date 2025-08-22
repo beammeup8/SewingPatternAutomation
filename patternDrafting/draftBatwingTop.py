@@ -81,14 +81,29 @@ def draft(measurements, garment_specs):
   cv.line(img, (center_x, sleeve_edge_y), (sleeve_edge_x, sleeve_edge_y), DRAFTING_COLOR, THICKNESS)
 
   neckline_outside_x = center_x + scale(garment_specs['neckline radius'])
-
   draw_horizantal_line(img, front_top_y, neckline_outside_x, shoulder_x, LINE_COLOR, THICKNESS)
-  # TODO Figure out how to calculate the angle
-  draw_line_at_angle(img, shoulder_x, front_top_y, 15, sleeve_edge_x, LINE_COLOR, THICKNESS)
 
+  sleeve_width = scale(garment_specs['cuff ease']) + scale(measurements['above elbow circumference'])
+  cuff_top_y = sleeve_edge_y - round(sleeve_width/4)
+  cuff_bottom_y = sleeve_edge_y + round(sleeve_width/4)
+  draw_vertical_line(img, sleeve_edge_x, cuff_top_y, cuff_bottom_y, LINE_COLOR, THICKNESS)
+
+  cv.line(img, (shoulder_x, front_top_y), (sleeve_edge_x, cuff_top_y), LINE_COLOR, THICKNESS)
 
   # Body Curve
   draw__smooth_curve(img, [(upper_bust_x, upper_bust_y), (bust_x, bust_y), (waist_x, waist_y), (high_hip_x, high_hip_y), (hip_x, hip_y)], BODY_COLOR, THICKNESS)
+  side_seam_points = []
+  side_seam_points.append((sleeve_edge_x, cuff_bottom_y))
+  bust_ease = round(scale(garment_specs['bust ease'])/4)
+  side_seam_points.append((bust_x + bust_ease, bust_y))
+  waist_ease = round(scale(garment_specs['waist ease'])/4)
+  side_seam_points.append((waist_x + waist_ease, waist_y))
+  hip_ease = round(scale(garment_specs['hip ease'])/4)
+  side_seam_points.append((high_hip_x + hip_ease, high_hip_y))
+  side_seam_points.append((hip_x + hip_ease, hip_y))
+
+
+  draw__smooth_curve(img, side_seam_points, LINE_COLOR, THICKNESS)
 
   return img, (total_x/ SCALE, total_y/ SCALE)
 
@@ -111,10 +126,12 @@ if __name__ == "__main__":
 
   garment_specs = {}
   garment_specs['sleeve length'] = 8
+  garment_specs['cuff ease'] = 1
   garment_specs['height above hip'] = 1
   garment_specs['front neckline depth'] = 7
   garment_specs['back neckline depth'] = 2
   garment_specs['neckline radius'] = 7
+  garment_specs['bust ease'] = 0.5
   garment_specs['waist ease'] = 1
   garment_specs['hip ease'] = 1.5
 
