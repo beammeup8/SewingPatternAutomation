@@ -38,10 +38,11 @@ def divide_image(image, page_size, image_size_inch):
     for y in range(y_page_count):
         y_start = y * page_height_px
         y_end = min(y_start + page_height_px, img_height_px)
+        y_size = y_end - y_start
         for x in range(x_page_count):
             x_start = x * page_width_px
             x_end = min(x_start + page_width_px, img_width_px)
-            pages.append(image[y_start:y_end, x_start:x_end])
+            pages.append((image[y_start:y_end, x_start:x_end],(x_end-x_start, y_size)))
 
     return pages, x_page_count, y_page_count
 
@@ -86,20 +87,20 @@ def add_page_markings(doc, page_label, usable_width, usable_height, page_size):
 
     doc.restoreState()
 
-def export_multi_page_pdf(image, page_size, image_size_inches):
+def export_multi_page_pdf(image, page_size, image_size_inches, outputFileName):
   print(page_size)
   print(image.shape)
   usable_width = page_size[0] - 2 * BORDER_POINTS
   usable_height = page_size[1] - 2 * BORDER_POINTS
 
-  doc = canvas.Canvas("testFiles/test.pdf", pagesize=page_size)
+  doc = canvas.Canvas(outputFileName, pagesize=page_size)
   split_images, pages_x, pages_y = divide_image(image, (usable_width, usable_height), image_size_inches)
   
   current_page_x = 0
   current_page_y = 0
   current_letter = letters[current_page_y]
 
-  for img in split_images:
+  for img, size in split_images:
     if current_page_x > pages_x - 1:
        current_page_x = 1
        current_page_y += 1
@@ -114,7 +115,7 @@ def export_multi_page_pdf(image, page_size, image_size_inches):
 
     file_name = convert_image(img)
 
-    doc.drawImage(file_name, BORDER_POINTS, BORDER_POINTS, usable_width, usable_height)
+    doc.drawImage(file_name, BORDER_POINTS, BORDER_POINTS, usable_width, usable_height, showBoundary=True, preserveAspectRatio=True)
     add_page_markings(doc, f"{current_letter}{current_page_x}", usable_width, usable_height, page_size)
     
     # The library will not accept a file in tmp, so this is the work around
@@ -123,10 +124,11 @@ def export_multi_page_pdf(image, page_size, image_size_inches):
   doc.save()
 
 if __name__ == "__main__":
-  image_file = 'testFiles/output.png'
+  image_file = 'testFiles/hartholme.png'
   image = cv.imread(image_file)
   a0_inches = (33.1, 46.8)
+  big_square = (37.034, 36)
 
   from reportlab.lib.pagesizes import letter # Size at 72 DPI
-  export_multi_page_pdf(image, letter, a0_inches)
+  export_multi_page_pdf(image, letter, big_square, "testFiles/hartholme.pdf")
 
