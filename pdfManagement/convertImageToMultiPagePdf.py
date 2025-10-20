@@ -87,13 +87,16 @@ def add_page_markings(doc, page_label, usable_width, usable_height, page_size):
 
     doc.restoreState()
 
-def export_multi_page_pdf(image, page_size, image_size_inches, outputFileName):
-  print(page_size)
-  print(image.shape)
+def export_multi_page_pdf(image, page_size_inches, image_size_inches, output_file_name):
+  page_size = (page_size_inches[0] * REPORT_LAB_DPI, page_size_inches[1] * REPORT_LAB_DPI)
+  print(f"Converting image:")
+  print(f"\tfrom dpi:({image.shape[0]}, {image.shape[1]}), in: {image_size_inches}")
+  print(f"\tto dpi: {page_size}, in: {page_size_inches}")
+
   usable_width = page_size[0] - 2 * BORDER_POINTS
   usable_height = page_size[1] - 2 * BORDER_POINTS
 
-  doc = canvas.Canvas(outputFileName, pagesize=page_size)
+  doc = canvas.Canvas(output_file_name, pagesize=page_size)
   split_images, pages_x, pages_y = divide_image(image, (usable_width, usable_height), image_size_inches)
   
   current_page_x = 0
@@ -121,14 +124,61 @@ def export_multi_page_pdf(image, page_size, image_size_inches, outputFileName):
     # The library will not accept a file in tmp, so this is the work around
     os.remove(file_name)
     doc.showPage()
+
+  print("Saving pdf to " + output_file_name)
   doc.save()
 
-if __name__ == "__main__":
-  image_file = 'testFiles/hartholme.png'
-  image = cv.imread(image_file)
-  a0_inches = (33.1, 46.8)
-  big_square = (37.034, 36)
+def inches_from_format_name(format):
+   match format:
+    case "letter":
+      return (8.5, 11)
+    case "legal":
+      return (8.5, 14)
+    case "tabloid":
+      return (11, 17)
+    case "ledger":
+      return (17, 11) 
+    case "a0":
+      return (33.1, 46.8)
+    case "a1":
+      return (23.4, 33.1)
+    case "a2":
+      return (16.5, 23.4)
+    case "a3":
+      return (11.7, 16.5)
+    case "a4":
+      return (8.3, 11.7)
+    case "a5":
+      return (5.8, 8.3)
 
-  from reportlab.lib.pagesizes import letter # Size at 72 DPI
-  export_multi_page_pdf(image, letter, big_square, "testFiles/hartholme.pdf")
+if __name__ == "__main__":
+  import argparse
+  parser = argparse.ArgumentParser(
+    prog='Image to Printable PDF',
+    description='Takes an image, the size of the image to be output (in inches) and converts it to a pdf where the pages make up that size'
+  )
+
+  parser.add_argument('image', help='Path to the image file to be split up')
+  parser.add_argument('--imagesize', '-i', required=True, help='Size of the image in inches. The format should be (width, height), or the name of the page size (letter/a0)')
+  parser.add_argument('--pagesize', '-p', default="letter", help='Size of the output pdf in inches. The format should be (width, height), or the name of the page size (letter/a0), the default is "letter"/(8.5,11)')
+  parser.add_argument('--output', '-o', help='Output file name, defaults to the original filename with "_split.pdf" appended')
+
+  args = parser.parse_args()
+
+  image = cv.imread(args.image)
+  page_size = args.pagesize
+  if isinstance(page_size, str):
+    page_size = inches_from_format_name(page_size)
+  image_size = args.imagesize
+  if image_size is None:
+    print("Image size is required")
+    exit(1)
+  elif isinstance(image_size, str):
+    image_size = inches_from_format_name(image_size)
+
+  output_file_name = args.output
+  if output_file_name is None:
+    output_file_name = args.image[:-4] + "_split.pdf"
+
+  export_multi_page_pdf(image, page_size, image_size, output_file_name)
 
