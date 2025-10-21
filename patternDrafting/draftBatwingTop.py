@@ -103,17 +103,16 @@ def draft(measurements, garment_specs):
 
   # Body Curve
   body_lines.append(Line([(upper_bust_x, upper_bust_y), (bust_x, bust_y), (waist_x, waist_y), (high_hip_x, high_hip_y), (hip_x, hip_y)], smooth=True))
-  side_seam_points = []
-  side_seam_points.append((sleeve_edge_x, cuff_bottom_y))
-  bust_ease = round(scale(garment_specs['bust ease'])/4)
-  side_seam_points.append((bust_x + bust_ease, bust_y))
-  waist_ease = round(scale(garment_specs['waist ease'])/4)
-  side_seam_points.append((waist_x + waist_ease, waist_y))
-  hip_ease = round(scale(garment_specs['hip ease'])/4)
-  side_seam_points.append((high_hip_x + hip_ease, high_hip_y))
-  side_seam_points.append((hip_x + hip_ease, hip_y))
 
-  pattern_lines.append(Line(side_seam_points, smooth=True))
+  bust_ease = round(scale(garment_specs['bust ease'])/4)
+  waist_ease = round(scale(garment_specs['waist ease'])/4)
+  hip_ease = round(scale(garment_specs['hip ease'])/4)
+
+  side_seam_line = Line([(sleeve_edge_x, cuff_bottom_y), (bust_x + bust_ease, bust_y), (waist_x + waist_ease, waist_y), (high_hip_x + hip_ease, high_hip_y), (hip_x + hip_ease, hip_y)], smooth=True)
+  hem_line = Line([(center_x, front_hem_point), (hip_x + hip_ease, front_hem_point)])
+  # The intersection logic has been removed. Adding the full lines for now.
+  pattern_lines.append(side_seam_line)
+  pattern_lines.append(hem_line)
 
   # Define layout offsets
   front_offset = (spacing, spacing)

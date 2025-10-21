@@ -8,6 +8,24 @@ class Line:
     self.points = points
     self.smooth = smooth
 
+  def get_render_points(self):
+    """
+    Returns the list of points that make up the line, generating points for a
+    smooth curve if necessary.
+    """
+    if not self.smooth or len(self.points) <= 2:
+      return self.points
+
+    k = min(len(self.points) - 1, 3)
+    points_arr = np.array(self.points)
+    t = np.arange(len(self.points))
+    steps = np.linspace(t.min(), t.max(), 500)
+
+    fx = make_interp_spline(t, points_arr[:, 0], k=k, bc_type='natural')
+    fy = make_interp_spline(t, points_arr[:, 1], k=k, bc_type='natural')
+
+    return list(np.stack((fx(steps), fy(steps)), axis=-1))
+
 def draw_line_at_angle(img, start_x, start_y, angle, end_x, color, thickness):
   angle = math.radians(angle)
   end_y = start_y + round(math.tan(angle) * (end_x - start_x))
@@ -20,24 +38,6 @@ def draw_curve(img, x_points, y_points, color, thickness):
   cv.polylines(img, [curve_points], color=color, isClosed=False, thickness=thickness)
   return curve_points
 
-def draw__smooth_curve(img, points, color, thickness):
-  if len(points) <= 2:
-    # Not enough points for a curve, draw a straight line instead.
-    points_array = np.array(points, dtype=np.int32).reshape((-1, 1, 2))
-    cv.polylines(img, [points_array], isClosed=False, color=color, thickness=thickness)
-    return 
-
-  k = min(len(points) - 1, 3) # Use cubic spline if possible, otherwise lower.
-  
-  points = np.array(points)
-  t = np.arange(len(points))
-
-  steps = np.linspace(t.min(), t.max(), 500)
-  fx = make_interp_spline(t, points[:, 0], k=k, bc_type='natural')
-  fy = make_interp_spline(t, points[:, 1], k=k, bc_type='natural')
-
-  draw_curve(img, fx(steps), fy(steps), color, thickness)
-
 def create_horizontal_line(y, start_x, end_x):
   return [Line([(start_x, y), (end_x, y)])]
 
@@ -46,10 +46,10 @@ def create_vertical_line(x, start_y, end_y):
 
 def draw_lines(img, lines, color, thickness, offset=(0, 0)):
   for line in lines:
-    offset_points = [(p[0] + offset[0], p[1] + offset[1]) for p in line.points]
-
-    if line.smooth:
-      draw__smooth_curve(img, offset_points, color, thickness)
-    else:
-      points_array = np.array(offset_points, dtype=np.int32).reshape((-1, 1, 2))
-      cv.polylines(img, [points_array], isClosed=False, color=color, thickness=thickness)
+    # Get the final render points, which will be smoothed if the line is smooth.
+    render_points = line.get_render_points()
+    # Apply the offset to the final points before drawing.
+    offset_points = [(p[0] + offset[0], p[1] + offset[1]) for p in render_points]
+    
+    points_array = np.array(offset_points, dtype=np.int32).reshape((-1, 1, 2))
+    cv.polylines(img, [points_array], isClosed=False, color=color, thickness=thickness)
