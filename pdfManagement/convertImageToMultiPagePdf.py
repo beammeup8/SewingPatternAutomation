@@ -87,11 +87,25 @@ def add_page_markings(doc, page_label, usable_width, usable_height, page_size):
 
     doc.restoreState()
 
-def export_multi_page_pdf(image, page_size_inches, image_size_inches, output_file_name):
+def check_proportions(image, image_size, force_dimensions):
+  img_height_px, img_width_px, _ = image.shape
+  img_width_in, img_height_in = image_size[0], image_size[1]
+  if img_width_in / img_height_in != img_width_px / img_height_px:
+    print("This image is not the same dimensions as the output file.")
+    print(f"\twidth match dimensions: ({img_width_in}, {img_height_in * img_width_px/img_height_px})")
+    print(f"\theight match dimensions: ({img_width_in * img_height_px/img_width_px}, {img_height_in})")
+    if not force_dimensions:
+      print("Either fix the dimensions or run again with the --force/-f flag")
+      exit(1)
+    print("Continuing with non-matching dimensions, this may cause distortion.")
+
+def export_multi_page_pdf(image, page_size_inches, image_size_inches, output_file_name, force_dimensions=False):
   page_size = (page_size_inches[0] * REPORT_LAB_DPI, page_size_inches[1] * REPORT_LAB_DPI)
   print(f"Converting image:")
-  print(f"\tfrom dpi:({image.shape[0]}, {image.shape[1]}), in: {image_size_inches}")
+  print(f"\tfrom dpi:({image.shape[1]}, {image.shape[0]}), in: {image_size_inches}")
   print(f"\tto dpi: {page_size}, in: {page_size_inches}")
+
+  check_proportions(image, image_size_inches, force_dimensions)
 
   usable_width = page_size[0] - 2 * BORDER_POINTS
   usable_height = page_size[1] - 2 * BORDER_POINTS
@@ -155,21 +169,35 @@ if __name__ == "__main__":
   import argparse
   parser = argparse.ArgumentParser(
     prog='Image to Printable PDF',
-    description='Takes an image, the size of the image to be output (in inches) and converts it to a pdf where the pages make up that size'
+    description='Takes an image, the size of the image and converts it to a pdf where the pages tile to create the input image at the same scale as the original.'
   )
 
-  parser.add_argument('image', help='Path to the image file to be split up')
-  parser.add_argument('--imagesize', '-i', required=True, help='Size of the image in inches. The format should be (width, height), or the name of the page size (letter/a0)')
-  parser.add_argument('--pagesize', '-p', default="letter", help='Size of the output pdf in inches. The format should be (width, height), or the name of the page size (letter/a0), the default is "letter"/(8.5,11)')
-  parser.add_argument('--output', '-o', help='Output file name, defaults to the original filename with "_split.pdf" appended')
+  parser.add_argument('image', metavar='IMAGE_PATH', type=str, help='Path to the image file to be split up')
+  
+  image_group = parser.add_mutually_exclusive_group(required=True)
+  image_group.add_argument('--imagedim', '-i', metavar=('WIDTH', 'HEIGHT'), nargs=2, type=int, help="Size of the image to be output in inches")
+  image_group.add_argument('--imagesize', '-I', metavar="PAPER_SIZE_NAME", type=str, help='Name of the page size that is the image size')
+  
+  page_group = parser.add_mutually_exclusive_group()
+  page_group.add_argument('--pagedim', '-p', metavar=('WIDTH', 'HEIGHT'), nargs=2, type=int, help="Size of each page of the output pdf in inches.")
+  page_group.add_argument('--pagesize', '-P', metavar="PAPER_SIZE_NAME", type=str,help='Size of each page of the output pdf by paper size. Defaults to letter')
+  
+  parser.add_argument('--output', '-o', metavar='OUTPUT_PATH', type=str, help='Output file name, defaults to the original filename with "_split.pdf" appended')
+  parser.add_argument('--force', '-f', action='store_true', help='Force overwrite of image dimensions, this may result in distorted outputs.')
+
+
 
   args = parser.parse_args()
+  print(args)
 
   image = cv.imread(args.image)
-  page_size = args.pagesize
-  if isinstance(page_size, str):
-    page_size = inches_from_format_name(page_size)
-  image_size = args.imagesize
+  page_size = "letter"
+  if args.pagedim is not None:
+    page_size = tuple(args.pagedim)
+  else:
+    page_size = inches_from_format_name(args.pagesize if args.pagesize is not None else page_size)
+  
+  image_size = args.imagesize if args.imagesize is not None else tuple(args.imagedim)
   if image_size is None:
     print("Image size is required")
     exit(1)
@@ -180,5 +208,5 @@ if __name__ == "__main__":
   if output_file_name is None:
     output_file_name = args.image[:-4] + "_split.pdf"
 
-  export_multi_page_pdf(image, page_size, image_size, output_file_name)
+  export_multi_page_pdf(image, page_size, image_size, output_file_name, args.force)
 
