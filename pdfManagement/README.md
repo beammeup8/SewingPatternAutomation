@@ -1,6 +1,6 @@
 # PDF Management
 
-This directory contains scripts for managing PDF files, and extracting images, Specifically for converting images to multi-page PDFs.
+This directory contains scripts for managing PDF files, and extracting images, specifically for converting images to multi-page PDFs.
 
 ## Convert Image to Multipage PDF
 
