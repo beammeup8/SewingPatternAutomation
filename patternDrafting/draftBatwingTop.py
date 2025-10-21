@@ -35,7 +35,8 @@ def draft(measurements, garment_specs):
 
   garm_length = measurements['shoulder to waist'] + measurements['waist to hip'] - garment_specs['height above hip']
   front_hem_point = front_top_y + scale(garm_length)
-  front_neck_point = front_top_y + scale(garment_specs['front neckline depth'])
+  front_neckline_depth = scale(garment_specs['front neckline depth'])
+  front_neck_point = front_top_y + front_neckline_depth
   # Center front line (body)
   body_lines.extend(create_vertical_line(center_x, front_top_y, front_hem_point))
   # Center front line (pattern)
@@ -54,14 +55,15 @@ def draft(measurements, garment_specs):
   neckline_radius_scaled = scale(garment_specs['neckline radius'])
   outer_x = center_x + neckline_radius_scaled
   
-  # Square neckline
-  pattern_lines.extend(create_square_neckline(center_x, scale(garment_specs['front neckline depth']), front_top_y, neckline_radius_scaled))
-
-  # V-neckline
-  pattern_lines.extend(create_v_neckline(center_x, front_neck_point, neckline_radius_scaled, front_top_y))
-
-  # Scoop neckline
-  pattern_lines.extend(create_scoop_neckline(center_x, front_neck_point, neckline_radius_scaled, front_top_y))
+  # This is currently drawing all three neckline options on top of each other.
+  # You can comment out the ones you don't want to see.
+  
+  # Square neckline 
+  pattern_lines.extend(create_square_neckline(center_x, front_top_y, front_neckline_depth, neckline_radius_scaled))
+  # V-neckline 
+  pattern_lines.extend(create_v_neckline(center_x, front_top_y, front_neckline_depth, neckline_radius_scaled))
+  # Scoop neckline 
+  pattern_lines.extend(create_scoop_neckline(center_x, front_top_y, front_neckline_depth, neckline_radius_scaled))
 
   # upper bust line
   upper_bust_x = center_x + scale(measurements['upper bust']/4)
