@@ -8,8 +8,10 @@ This script takes a large image (such as a sewing pattern or ttrpg map) and spli
 
 ### Usage
 
+Currently the only supported way to run it is to call it from the command line as a Python program
+
 ```bash
-usage: Image to Printable PDF [-h]
+usage: python3 convertImageToMultiPagePdf.py [-h]
                               (--imagedim WIDTH HEIGHT | --imagesize PAPER_SIZE_NAME)
                               [--pagedim WIDTH HEIGHT | --pagesize PAPER_SIZE_NAME]
                               [--output OUTPUT_PATH] [--force]
