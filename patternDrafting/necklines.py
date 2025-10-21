@@ -4,34 +4,27 @@ from scipy.interpolate import make_interp_spline
 from drafting_util import *
 
 # v-necks are actually a slight curve, so this is a steep quadratic function
-def create_v_neckline(center_x, shoulder_height, neckline_depth, neckline_radius):
-  outer_x = center_x + neckline_radius
-  bottom_y = shoulder_height + neckline_depth
+def create_v_neckline(shoulder_height, neckline_depth, neckline_radius):
+  a = (shoulder_height - neckline_depth)/pow(neckline_radius, 2)
+  fx = lambda x: a * pow(x, 2) + neckline_depth
 
-  a = -(neckline_depth)/pow(outer_x - center_x, 2)
-  fx = lambda x: a * pow(x - center_x, 2) + bottom_y
-
-  x_smooth = np.linspace(center_x, outer_x, 50)
+  x_smooth = np.linspace(0,neckline_radius, 50)
   y_smooth = fx(x_smooth)
 
   points = list(np.stack((x_smooth, y_smooth), axis=-1))
   return [Line(points, smooth=True)]
 
-def create_square_neckline(center_x, shoulder_height, neckline_depth, neck_radius):
-  outer_x = center_x + neck_radius
-  bottom_y = shoulder_height + neckline_depth
-
-  side_line = create_vertical_line(outer_x, shoulder_height, bottom_y)
-  bottom_line = create_horizontal_line(bottom_y, center_x, outer_x)
+def create_square_neckline(shoulder_height, neckline_depth, neckline_radius):
+  side_line = create_vertical_line(neckline_radius, shoulder_height, neckline_depth)
+  bottom_line = create_horizontal_line(neckline_depth, 0, neckline_radius)
   return side_line + bottom_line
 
-def create_scoop_neckline(center_x, shoulder_height, neckline_depth, neckline_radius):
-  outer_x = center_x + neckline_radius
-  bottom_y = shoulder_height + neckline_depth
+def create_scoop_neckline(shoulder_height, neckline_depth, neckline_radius):
+  a = (shoulder_height - neckline_depth)/pow(neckline_radius, 6)
+  fx = lambda x: a * pow(x, 6) + neckline_depth
 
-  a = -(neckline_depth)/pow(neckline_radius, 4)
-  fx = lambda x: a * pow(x - center_x, 4) + bottom_y
-  x_smooth = np.linspace(center_x, outer_x, 50)
+  x_smooth = np.linspace(0, neckline_radius, 50)
   y_smooth = fx(x_smooth)
+  
   points = list(np.stack((x_smooth, y_smooth), axis=-1))
   return [Line(points, smooth=True)]

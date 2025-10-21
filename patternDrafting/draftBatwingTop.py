@@ -30,8 +30,8 @@ def draft(measurements, garment_specs):
   spacing = scale(BOARDER)
 
   # Draw drafting lines
-  center_x = spacing
-  front_top_y = spacing
+  center_x = 0
+  front_top_y = 0
 
   garm_length = measurements['shoulder to waist'] + measurements['waist to hip'] - garment_specs['height above hip']
   front_hem_point = front_top_y + scale(garm_length)
@@ -42,11 +42,6 @@ def draft(measurements, garment_specs):
   # Center front line (pattern)
   pattern_lines.extend(create_vertical_line(center_x, front_neck_point, front_hem_point))
 
-  back_top_y = spacing + front_hem_point
-  back_hem_point = back_top_y + scale(garm_length)
-  # Center back line (pattern)
-  pattern_lines.extend(create_vertical_line(center_x, back_top_y, back_hem_point))
- 
   # shoulder line
   shoulder_x = center_x + scale(measurements['shoulders']/2)
   body_lines.extend(create_horizontal_line(front_top_y, center_x, shoulder_x))
@@ -59,11 +54,11 @@ def draft(measurements, garment_specs):
   # You can comment out the ones you don't want to see.
   
   # Square neckline 
-  pattern_lines.extend(create_square_neckline(center_x, front_top_y, front_neckline_depth, neckline_radius_scaled))
+  pattern_lines.extend(create_square_neckline(front_top_y, front_neck_point, neckline_radius_scaled))
   # V-neckline 
-  pattern_lines.extend(create_v_neckline(center_x, front_top_y, front_neckline_depth, neckline_radius_scaled))
+  pattern_lines.extend(create_v_neckline(front_top_y, front_neck_point, neckline_radius_scaled))
   # Scoop neckline 
-  pattern_lines.extend(create_scoop_neckline(center_x, front_top_y, front_neckline_depth, neckline_radius_scaled))
+  pattern_lines.extend(create_scoop_neckline(front_top_y, front_neck_point, neckline_radius_scaled))
 
   # upper bust line
   upper_bust_x = center_x + scale(measurements['upper bust']/4)
@@ -120,9 +115,13 @@ def draft(measurements, garment_specs):
 
   pattern_lines.append(Line(side_seam_points, smooth=True))
 
-  draw_lines(img, body_lines, BODY_COLOR, THICKNESS)
-  draw_lines(img, drafting_lines, DRAFTING_COLOR, THICKNESS)
-  draw_lines(img, pattern_lines, LINE_COLOR, THICKNESS)
+  # Define layout offsets
+  front_offset = (spacing, spacing)
+  back_offset = (spacing, front_offset[1] + front_hem_point + spacing)
+
+  draw_lines(img, body_lines, BODY_COLOR, THICKNESS, offset=front_offset)
+  draw_lines(img, drafting_lines, DRAFTING_COLOR, THICKNESS, offset=front_offset)
+  draw_lines(img, pattern_lines, LINE_COLOR, THICKNESS, offset=front_offset)
 
   return img, (total_x/ SCALE, total_y/ SCALE)
 

@@ -44,10 +44,12 @@ def create_horizontal_line(y, start_x, end_x):
 def create_vertical_line(x, start_y, end_y):
   return [Line([(x, start_y), (x, end_y)])]
 
-def draw_lines(img, lines, color, thickness):
+def draw_lines(img, lines, color, thickness, offset=(0, 0)):
   for line in lines:
+    offset_points = [(p[0] + offset[0], p[1] + offset[1]) for p in line.points]
+
     if line.smooth:
-      draw__smooth_curve(img, line.points, color, thickness)
+      draw__smooth_curve(img, offset_points, color, thickness)
     else:
-      points_array = np.array(line.points, dtype=np.int32).reshape((-1, 1, 2))
+      points_array = np.array(offset_points, dtype=np.int32).reshape((-1, 1, 2))
       cv.polylines(img, [points_array], isClosed=False, color=color, thickness=thickness)
