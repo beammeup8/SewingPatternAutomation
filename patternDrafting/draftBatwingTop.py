@@ -3,8 +3,10 @@
 import cv2 as cv
 import numpy as np
 
-from drafting_util import *
 from necklines import *
+from util.line import Line
+from util.draw import draw_lines
+
 
 BACKGROUND_COLOR = (0, 0, 0)
 LINE_COLOR = (255, 255, 255)
@@ -38,13 +40,13 @@ def draft(measurements, garment_specs):
   front_neckline_depth = scale(garment_specs['front neckline depth'])
   front_neck_point = front_top_y + front_neckline_depth
   # Center front line (body)
-  body_lines.extend(create_vertical_line(center_x, front_top_y, front_hem_point))
+  body_lines.append(Line.vertical(center_x, front_top_y, front_hem_point))
   # Center front line (pattern)
-  pattern_lines.extend(create_vertical_line(center_x, front_neck_point, front_hem_point))
+  pattern_lines.append(Line.vertical(center_x, front_neck_point, front_hem_point))
 
   # shoulder line
   shoulder_x = center_x + scale(measurements['shoulders']/2)
-  body_lines.extend(create_horizontal_line(front_top_y, center_x, shoulder_x))
+  body_lines.append(Line.horizontal(front_top_y, center_x, shoulder_x))
 
   # neckline
   neckline_radius_scaled = scale(garment_specs['neckline radius'])
@@ -54,50 +56,50 @@ def draft(measurements, garment_specs):
   # You can comment out the ones you don't want to see.
   
   # Square neckline 
-  pattern_lines.extend(create_square_neckline(front_top_y, front_neck_point, neckline_radius_scaled))
+  pattern_lines.append(create_square_neckline(front_top_y, front_neck_point, neckline_radius_scaled))
   # V-neckline 
-  pattern_lines.extend(create_v_neckline(front_top_y, front_neck_point, neckline_radius_scaled))
+  pattern_lines.append(create_v_neckline(front_top_y, front_neck_point, neckline_radius_scaled))
   # Scoop neckline 
-  pattern_lines.extend(create_scoop_neckline(front_top_y, front_neck_point, neckline_radius_scaled))
+  pattern_lines.append(create_scoop_neckline(front_top_y, front_neck_point, neckline_radius_scaled))
 
   # upper bust line
   upper_bust_x = center_x + scale(measurements['upper bust']/4)
   upper_bust_y = front_top_y + scale(measurements['shoulder to armpit'])
-  body_lines.extend(create_horizontal_line(upper_bust_y, center_x, upper_bust_x))
+  body_lines.append(Line.horizontal(upper_bust_y, center_x, upper_bust_x))
   
   # bust line
   bust_x = center_x + scale(measurements['bust']/4)
   bust_y = front_top_y + scale(measurements['shoulder to bust'])
-  body_lines.extend(create_horizontal_line(bust_y, center_x, bust_x))
+  body_lines.append(Line.horizontal(bust_y, center_x, bust_x))
 
   # waist line
   waist_x = center_x + scale(measurements['waist']/4)
   waist_y = front_top_y + scale(measurements['shoulder to waist'])
-  body_lines.extend(create_horizontal_line(waist_y, center_x, waist_x))
+  body_lines.append(Line.horizontal(waist_y, center_x, waist_x))
 
   # high hip line
   high_hip_x = center_x + scale(measurements['high hip']/4)
   high_hip_y = front_top_y + scale(measurements['shoulder to waist'] + measurements['waist to high hip'])
-  body_lines.extend(create_horizontal_line(high_hip_y, center_x, high_hip_x))
+  body_lines.append(Line.horizontal(high_hip_y, center_x, high_hip_x))
 
   # hip line
   hip_x = center_x + scale(measurements['hip']/4)
   hip_y = front_top_y + scale(measurements['shoulder to waist'] + measurements['waist to hip'])
-  body_lines.extend(create_horizontal_line(hip_y, center_x, hip_x))
+  body_lines.append(Line.horizontal(hip_y, center_x, hip_x))
 
   # Sleeve Lines
   sleeve_edge_x = center_x + scale(garment_specs['sleeve length'] + measurements['shoulders']/2)
   armpit_depth = scale(measurements['shoulder to bust'])
   sleeve_edge_y = round((front_top_y + armpit_depth)/2)
-  drafting_lines.extend(create_horizontal_line(sleeve_edge_y, center_x, sleeve_edge_x))
+  drafting_lines.append(Line.horizontal(sleeve_edge_y, center_x, sleeve_edge_x))
 
   neckline_outside_x = center_x + neckline_radius_scaled
-  pattern_lines.extend(create_horizontal_line(front_top_y, neckline_outside_x, shoulder_x))
+  pattern_lines.append(Line.horizontal(front_top_y, neckline_outside_x, shoulder_x))
 
   sleeve_width = scale(garment_specs['cuff ease']) + scale(measurements['above elbow circumference'])
   cuff_top_y = sleeve_edge_y - round(sleeve_width/4)
   cuff_bottom_y = sleeve_edge_y + round(sleeve_width/4)
-  pattern_lines.extend(create_vertical_line(sleeve_edge_x, cuff_top_y, cuff_bottom_y))
+  pattern_lines.append(Line.vertical(sleeve_edge_x, cuff_top_y, cuff_bottom_y))
 
   pattern_lines.append(Line([(shoulder_x, front_top_y), (sleeve_edge_x, cuff_top_y)]))
 
@@ -110,6 +112,7 @@ def draft(measurements, garment_specs):
 
   side_seam_line = Line([(sleeve_edge_x, cuff_bottom_y), (bust_x + bust_ease, bust_y), (waist_x + waist_ease, waist_y), (high_hip_x + hip_ease, high_hip_y), (hip_x + hip_ease, hip_y)], smooth=True)
   hem_line = Line([(center_x, front_hem_point), (hip_x + hip_ease, front_hem_point)])
+  
   # The intersection logic has been removed. Adding the full lines for now.
   pattern_lines.append(side_seam_line)
   pattern_lines.append(hem_line)
