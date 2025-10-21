@@ -11,11 +11,10 @@ This script takes a large image (such as a sewing pattern or ttrpg map) and spli
 Currently the only supported way to run it is to call it from the command line as a Python program
 
 ```bash
-usage: python3 convertImageToMultiPagePdf.py [-h]
+Usage: Image to Printable PDF [-h]
                               (--imagedim WIDTH HEIGHT | --imagesize PAPER_SIZE_NAME)
                               [--pagedim WIDTH HEIGHT | --pagesize PAPER_SIZE_NAME]
                               [--output OUTPUT_PATH] [--force]
-                              IMAGE_PATH
 
 Takes an image, the size of the image and converts it to a pdf where the pages
 tile to create the input image at the same scale as the original.
@@ -61,9 +60,9 @@ letter, legal, tabloid, ledger, a0, a1, a2, a3, a4, a5
 ### Examples
 1. Convert an A0-sized image to a multi-page PDF with letter-sized pages:
     ``` bash
-    python convertImageToMultiPagePdf.py my_pattern.png -I a0 -P letter -o my_pattern_printable.pdf
+    python3 convertImageToMultiPagePdf.py my_pattern.png -I a0 -P letter -o my_pattern_printable.pdf
     ```
 1. Convert an image with custom dimensions to A4 pages:
     ``` bash
-    python convertImageToMultiPagePdf.py my_map.jpg -i 30 20 --pagesize a4
+    python3 convertImageToMultiPagePdf.py my_map.jpg -i 30 20 --pagesize a4
     ```
