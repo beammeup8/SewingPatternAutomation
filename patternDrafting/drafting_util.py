@@ -24,7 +24,11 @@ class Line:
     fx = make_interp_spline(t, points_arr[:, 0], k=k, bc_type='natural')
     fy = make_interp_spline(t, points_arr[:, 1], k=k, bc_type='natural')
 
-    return list(np.stack((fx(steps), fy(steps)), axis=-1))
+    # Cache the render, so it will not be redone
+    self.points = list(np.stack((fx(steps), fy(steps)), axis=-1))
+    self.smooth = False 
+
+    return self.points
 
 def draw_line_at_angle(img, start_x, start_y, angle, end_x, color, thickness):
   angle = math.radians(angle)
