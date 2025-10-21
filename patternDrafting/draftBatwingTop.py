@@ -60,6 +60,9 @@ def draft(measurements, garment_specs):
   # V-neckline
   pattern_lines.extend(create_v_neckline(center_x, front_neck_point, neckline_radius_scaled, front_top_y))
 
+  # Scoop neckline
+  pattern_lines.extend(create_scoop_neckline(center_x, front_neck_point, neckline_radius_scaled, front_top_y))
+
   # upper bust line
   upper_bust_x = center_x + scale(measurements['upper bust']/4)
   upper_bust_y = front_top_y + scale(measurements['shoulder to armpit'])
