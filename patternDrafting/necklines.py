@@ -4,32 +4,30 @@ from scipy.interpolate import make_interp_spline
 from drafting_util import *
 
 # v-necks are actually a slight curve, so this is a steep quadratic function
-def draw_v_neckline(img, center_x, deepest_y, neckline_radius, shoulder_y, color, thickness):
+def create_v_neckline(center_x, deepest_y, neckline_radius, shoulder_y):
   outer_x = center_x + neckline_radius
 
   a = (shoulder_y - deepest_y)/pow(outer_x - center_x, 2)
   fx = lambda x: a * pow(x - center_x, 2) + deepest_y
 
-  x_smooth = np.linspace(center_x, outer_x, 10)
+  x_smooth = np.linspace(center_x, outer_x, 50)
   y_smooth = fx(x_smooth)
 
-  draw_curve(img, x_smooth, y_smooth, color, thickness)
+  points = list(np.stack((x_smooth, y_smooth), axis=-1))
+  return [Line(points)]
 
-def draw_square_neckline(img, center_x, neck_depth, shoulder_height, neck_radius, color, thickness):
+def create_square_neckline(center_x, neck_depth, shoulder_height, neck_radius):
   outer_x = center_x + neck_radius
+  deepest_y = shoulder_height + neck_depth
 
-  draw_vertical_line(img, outer_x, shoulder_height, shoulder_height + neck_depth, color, thickness)
-  draw_horizantal_line(img, shoulder_height + neck_depth, center_x, outer_x, color, thickness)
+  side_line = create_vertical_line(outer_x, shoulder_height, deepest_y)
+  bottom_line = create_horizontal_line(deepest_y, center_x, outer_x)
+  return side_line + bottom_line
 
-
-def draw_scoop_neckline(img, center, outer_point, bottom_width, color, thickness):
+def create_scoop_neckline(center, outer_point):
   a = (outer_point[1] - center[1])/pow(outer_point[0] - center[0], 2)
   fx = lambda x: a * pow(x - center[0], 4) + center[1] 
-
-  x_smooth = np.linspace(center[0], outer_point[0], 10)
+  x_smooth = np.linspace(center[0], outer_point[0], 50)
   y_smooth = fx(x_smooth)
-
-  print(x_smooth)
-  print(y_smooth)
-
-  draw_curve(img, x_smooth, y_smooth, color, thickness)
+  points = list(np.stack((x_smooth, y_smooth), axis=-1))
+  return [Line(points)]

@@ -17,12 +17,15 @@ BOARDER = 2
 def scale(inches):
   return round(SCALE * inches)
 
-
 def draft(measurements, garment_specs):
   total_x = 5000
   total_y = 10000
 
   img = np.full((total_y, total_x, 3), BACKGROUND_COLOR, dtype=np.uint8)
+
+  body_lines = []
+  drafting_lines = []
+  pattern_lines = []
 
   spacing = scale(BOARDER)
 
@@ -33,65 +36,73 @@ def draft(measurements, garment_specs):
   garm_length = measurements['shoulder to waist'] + measurements['waist to hip'] - garment_specs['height above hip']
   front_hem_point = front_top_y + scale(garm_length)
   front_neck_point = front_top_y + scale(garment_specs['front neckline depth'])
-  draw_vertical_line(img, center_x, front_top_y, front_hem_point, BODY_COLOR, THICKNESS)
-  draw_vertical_line(img, center_x, front_neck_point, front_hem_point, LINE_COLOR, THICKNESS)
+  # Center front line (body)
+  body_lines.extend(create_vertical_line(center_x, front_top_y, front_hem_point))
+  # Center front line (pattern)
+  pattern_lines.extend(create_vertical_line(center_x, front_neck_point, front_hem_point))
 
   back_top_y = spacing + front_hem_point
   back_hem_point = back_top_y + scale(garm_length)
-  draw_vertical_line(img, center_x, back_top_y, back_hem_point, LINE_COLOR, THICKNESS)
+  # Center back line (pattern)
+  pattern_lines.extend(create_vertical_line(center_x, back_top_y, back_hem_point))
  
   # shoulder line
   shoulder_x = center_x + scale(measurements['shoulders']/2)
-  draw_horizantal_line(img, front_top_y, center_x, shoulder_x, BODY_COLOR, THICKNESS)
+  body_lines.extend(create_horizontal_line(front_top_y, center_x, shoulder_x))
 
   # neckline
+  neckline_radius_scaled = scale(garment_specs['neckline radius'])
+  outer_x = center_x + neckline_radius_scaled
+  
+  # Square neckline
+  pattern_lines.extend(create_square_neckline(center_x, scale(garment_specs['front neckline depth']), front_top_y, neckline_radius_scaled))
 
-  draw_square_neckline(img, center_x, scale(garment_specs['front neckline depth']), front_top_y, scale(garment_specs['neckline radius']), LINE_COLOR, THICKNESS)
-  draw_v_neckline(img, center_x, front_neck_point, scale(garment_specs['neckline radius']), front_top_y, LINE_COLOR, THICKNESS)
+  # V-neckline
+  pattern_lines.extend(create_v_neckline(center_x, front_neck_point, neckline_radius_scaled, front_top_y))
 
   # upper bust line
   upper_bust_x = center_x + scale(measurements['upper bust']/4)
   upper_bust_y = front_top_y + scale(measurements['shoulder to armpit'])
-  draw_horizantal_line(img, upper_bust_y, center_x, upper_bust_x, BODY_COLOR, THICKNESS)
+  body_lines.extend(create_horizontal_line(upper_bust_y, center_x, upper_bust_x))
   
   # bust line
   bust_x = center_x + scale(measurements['bust']/4)
   bust_y = front_top_y + scale(measurements['shoulder to bust'])
-  cv.line(img, (center_x, bust_y), (bust_x, bust_y), BODY_COLOR, THICKNESS)
+  body_lines.extend(create_horizontal_line(bust_y, center_x, bust_x))
 
   # waist line
   waist_x = center_x + scale(measurements['waist']/4)
   waist_y = front_top_y + scale(measurements['shoulder to waist'])
-  cv.line(img, (center_x, waist_y), (waist_x, waist_y), BODY_COLOR, THICKNESS)
+  body_lines.extend(create_horizontal_line(waist_y, center_x, waist_x))
 
   # high hip line
   high_hip_x = center_x + scale(measurements['high hip']/4)
   high_hip_y = front_top_y + scale(measurements['shoulder to waist'] + measurements['waist to high hip'])
-  draw_horizantal_line(img, high_hip_y, center_x, high_hip_x, BODY_COLOR, THICKNESS)
+  body_lines.extend(create_horizontal_line(high_hip_y, center_x, high_hip_x))
 
   # hip line
   hip_x = center_x + scale(measurements['hip']/4)
   hip_y = front_top_y + scale(measurements['shoulder to waist'] + measurements['waist to hip'])
-  cv.line(img, (center_x, hip_y), (hip_x, hip_y), BODY_COLOR, THICKNESS)
+  body_lines.extend(create_horizontal_line(hip_y, center_x, hip_x))
 
   # Sleeve Lines
   sleeve_edge_x = center_x + scale(garment_specs['sleeve length'] + measurements['shoulders']/2)
   armpit_depth = scale(measurements['shoulder to bust'])
   sleeve_edge_y = round((front_top_y + armpit_depth)/2)
-  cv.line(img, (center_x, sleeve_edge_y), (sleeve_edge_x, sleeve_edge_y), DRAFTING_COLOR, THICKNESS)
+  drafting_lines.extend(create_horizontal_line(sleeve_edge_y, center_x, sleeve_edge_x))
 
-  neckline_outside_x = center_x + scale(garment_specs['neckline radius'])
-  draw_horizantal_line(img, front_top_y, neckline_outside_x, shoulder_x, LINE_COLOR, THICKNESS)
+  neckline_outside_x = center_x + neckline_radius_scaled
+  pattern_lines.extend(create_horizontal_line(front_top_y, neckline_outside_x, shoulder_x))
 
   sleeve_width = scale(garment_specs['cuff ease']) + scale(measurements['above elbow circumference'])
   cuff_top_y = sleeve_edge_y - round(sleeve_width/4)
   cuff_bottom_y = sleeve_edge_y + round(sleeve_width/4)
-  draw_vertical_line(img, sleeve_edge_x, cuff_top_y, cuff_bottom_y, LINE_COLOR, THICKNESS)
+  pattern_lines.extend(create_vertical_line(sleeve_edge_x, cuff_top_y, cuff_bottom_y))
 
-  cv.line(img, (shoulder_x, front_top_y), (sleeve_edge_x, cuff_top_y), LINE_COLOR, THICKNESS)
+  pattern_lines.append(Line([(shoulder_x, front_top_y), (sleeve_edge_x, cuff_top_y)]))
 
   # Body Curve
-  draw__smooth_curve(img, [(upper_bust_x, upper_bust_y), (bust_x, bust_y), (waist_x, waist_y), (high_hip_x, high_hip_y), (hip_x, hip_y)], BODY_COLOR, THICKNESS)
+  body_lines.append(Line([(upper_bust_x, upper_bust_y), (bust_x, bust_y), (waist_x, waist_y), (high_hip_x, high_hip_y), (hip_x, hip_y)], smooth=True))
   side_seam_points = []
   side_seam_points.append((sleeve_edge_x, cuff_bottom_y))
   bust_ease = round(scale(garment_specs['bust ease'])/4)
@@ -102,8 +113,11 @@ def draft(measurements, garment_specs):
   side_seam_points.append((high_hip_x + hip_ease, high_hip_y))
   side_seam_points.append((hip_x + hip_ease, hip_y))
 
+  pattern_lines.append(Line(side_seam_points, smooth=True))
 
-  draw__smooth_curve(img, side_seam_points, LINE_COLOR, THICKNESS)
+  draw_lines(img, body_lines, BODY_COLOR, THICKNESS)
+  draw_lines(img, drafting_lines, DRAFTING_COLOR, THICKNESS)
+  draw_lines(img, pattern_lines, LINE_COLOR, THICKNESS)
 
   return img, (total_x/ SCALE, total_y/ SCALE)
 
@@ -139,5 +153,3 @@ if __name__ == "__main__":
   img,size = draft(measurements, garment_specs)
   print(size)
   cv.imwrite("testFiles/batwingDraft.png", img)
-
-
