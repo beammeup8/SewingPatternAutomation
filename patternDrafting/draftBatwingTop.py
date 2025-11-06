@@ -1,17 +1,11 @@
 # Drafting loosely following this tutorial
 
-import cv2 as cv
-import numpy as np
-
 from necklines import *
 from util.line import Line
-from util.draw import draw_lines
+from util.pattern_piece import PatternPiece
 
 
-BACKGROUND_COLOR = (0, 0, 0)
-LINE_COLOR = (255, 255, 255)
-BODY_COLOR = (255, 0, 0)
-DRAFTING_COLOR = (0, 255, 0)
+
 THICKNESS = 10
 SCALE = 100
 BOARDER = 2
@@ -20,12 +14,6 @@ def draft(measurements, garment_specs):
   # Dimensions in inches
   total_x_in = 50
   total_y_in = 100
-
-  # Image dimensions in pixels
-  img_width_px = round(total_x_in * SCALE)
-  img_height_px = round(total_y_in * SCALE)
-  img = np.full((img_height_px, img_width_px, 3), BACKGROUND_COLOR, dtype=np.uint8)
-
   body_lines = []
   drafting_lines = []
   pattern_lines = []
@@ -51,7 +39,6 @@ def draft(measurements, garment_specs):
 
   # neckline
   neckline_radius = garment_specs['neckline radius']
-  outer_x = center_x + neckline_radius
   
   # This is currently drawing all three neckline options on top of each other.
   # You can comment out the ones you don't want to see.
@@ -120,18 +107,27 @@ def draft(measurements, garment_specs):
 
   # Define layout offsets
   front_offset_in = (spacing, spacing)
-  back_offset_in = (spacing, front_offset_in[1] + front_hem_point + spacing)
 
-  draw_lines(img, body_lines, BODY_COLOR, THICKNESS, scale=SCALE, offset=front_offset_in)
-  draw_lines(img, drafting_lines, DRAFTING_COLOR, THICKNESS, scale=SCALE, offset=front_offset_in)
-  draw_lines(img, pattern_lines, LINE_COLOR, THICKNESS, scale=SCALE, offset=front_offset_in)
+  # Assemble the pattern pieces at the end
+  front_piece = PatternPiece(name="Front",
+                             offset_in=front_offset_in,
+                             body_lines=body_lines,
+                             drafting_lines=drafting_lines,
+                             pattern_lines=pattern_lines)
 
-  # The back piece drafting would go here, using back_offset_in
-  # draw_lines(img, back_pattern_lines, LINE_COLOR, THICKNESS, scale=SCALE, offset=back_offset_in)
-
-  return img, (total_x_in, total_y_in)
+  # The back piece drafting would go here
+  # back_offset_in = (spacing, front_offset_in[1] + front_hem_point + spacing)
+  # back_piece = PatternPiece(name="Back", offset_in=back_offset_in)
+  
+  return {
+      'pattern_pieces': [front_piece],
+      'canvas_size': (total_x_in, total_y_in)
+  }
 
 if __name__ == "__main__":
+  BACKGROUND_COLOR = (0, 0, 0)
+  import cv2 as cv
+  from util.draw import create_pattern_image # Import here as it's only used in __main__
   measurements = {}
   measurements['upper bust'] = 49
   measurements['bust'] = 56
@@ -157,7 +153,15 @@ if __name__ == "__main__":
   garment_specs['waist ease'] = 1
   garment_specs['hip ease'] = 1.5
 
+  pattern_data = draft(measurements, garment_specs)
 
-  img,size = draft(measurements, garment_specs)
-  print(size)
+  img = create_pattern_image(
+      canvas_size_in=pattern_data['canvas_size'],
+      scale=SCALE,
+      background_color=BACKGROUND_COLOR,
+      pattern_pieces=pattern_data['pattern_pieces'],
+      thickness=THICKNESS
+  )
+
+  print(pattern_data['canvas_size'])
   cv.imwrite("testFiles/batwingDraft.png", img)
