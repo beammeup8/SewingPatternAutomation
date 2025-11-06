@@ -6,9 +6,6 @@ from util.pattern_piece import PatternPiece
 from util.measurements import Measurements
 from util.garment_specs import GarmentSpecs
 
-
-
-THICKNESS = 10
 SCALE = 100
 BOARDER = 2
 
@@ -127,23 +124,19 @@ def draft(measurements, garment_specs):
   }
 
 if __name__ == "__main__":
-  BACKGROUND_COLOR = (0, 0, 0)
-  import cv2 as cv
-  from util.draw import create_pattern_image # Import here as it's only used in __main__
+  from util.draw import draw_pattern # Import here as it's only used in __main__
   
   # Load measurements and garment specs from files
   measurements = Measurements.from_file('patternDrafting/measurements/sample_measurements.yaml')
   garment_specs = GarmentSpecs.from_file('patternDrafting/garmentSpecs/sample_garment_specs.yaml')
 
   pattern_data = draft(measurements, garment_specs)
-
-  img = create_pattern_image(
+  
+  draw_pattern(
       canvas_size_in=pattern_data['canvas_size'],
       scale=SCALE,
-      background_color=BACKGROUND_COLOR,
       pattern_pieces=pattern_data['pattern_pieces'],
-      thickness=THICKNESS
+      output_filepath="testFiles/batwingDraft.png"
   )
 
   print(pattern_data['canvas_size'])
-  cv.imwrite("testFiles/batwingDraft.png", img)
