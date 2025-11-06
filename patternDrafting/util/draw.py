@@ -9,7 +9,7 @@ DRAFTING_COLOR = (0, 255, 0)
 BACKGROUND_COLOR = (0, 0, 0)
 THICKNESS = 10
 
-def draw_pattern(canvas_size_in, scale, pattern_pieces, output_filepath):
+def draw_pattern(canvas_size_in, scale, pattern_pieces, output_filepath, output=True):
   """
   Creates an image and draws all specified line groups onto it.
 
@@ -31,8 +31,10 @@ def draw_pattern(canvas_size_in, scale, pattern_pieces, output_filepath):
     draw_lines(img, piece.body_lines, BODY_COLOR, scale=scale, offset=piece.offset_in)
     draw_lines(img, piece.drafting_lines, DRAFTING_COLOR, scale=scale, offset=piece.offset_in)
     draw_lines(img, piece.pattern_lines, LINE_COLOR, scale=scale, offset=piece.offset_in)
-    
-  cv.imwrite(output_filepath, img)
+  
+  if output:
+    cv.imwrite(output_filepath, img)
+  return img
 
 def draw_lines(img, lines, color, scale=1, offset=(0, 0)):
   for line in lines:
