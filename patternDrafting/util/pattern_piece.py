@@ -24,3 +24,23 @@ class PatternPiece:
     Returns a single list containing all lines from all types.
     """
     return self.body_lines + self.drafting_lines + self.pattern_lines
+
+  def get_bounding_box(self):
+    """
+    Calculates the bounding box that encompasses all lines in this piece.
+    Returns (min_x, min_y, max_x, max_y) in inches.
+    """
+    all_points = []
+    for line in self.pattern_lines:
+        # Use get_render_points to account for smoothed curves
+        all_points.extend(line.get_render_points())
+    
+    if not all_points:
+        return (0, 0, 0, 0)
+
+    min_x = min(p[0] for p in all_points)
+    max_x = max(p[0] for p in all_points)
+    min_y = min(p[1] for p in all_points)
+    max_y = max(p[1] for p in all_points)
+    
+    return (min_x, min_y, max_x, max_y)

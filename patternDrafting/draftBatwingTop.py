@@ -136,7 +136,8 @@ if __name__ == "__main__":
       canvas_size_in=pattern_data['canvas_size'],
       scale=SCALE,
       pattern_pieces=pattern_data['pattern_pieces'],
-      output_filepath="testFiles/batwingDraft.png"
+      output_filepath="testFiles/batwingDraft.png",
+      pattern_name="Batwing Top"
   )
 
   print(pattern_data['canvas_size'])
