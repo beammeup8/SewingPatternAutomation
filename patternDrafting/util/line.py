@@ -50,5 +50,5 @@ class Line:
   def from_angle(cls, start_x, start_y, angle, end_x):
     """Creates a Line object at a set angle."""
     rad_angle = math.radians(angle)
-    end_y = start_y + round(math.tan(rad_angle) * (end_x - start_x))
+    end_y = start_y + (math.tan(rad_angle) * (end_x - start_x))
     return cls([(start_x, start_y), (end_x, end_y)])
