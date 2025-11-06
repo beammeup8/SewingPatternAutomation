@@ -4,6 +4,9 @@
 *.png
 *.txt
 
+# ignore measurements besides the manually added ones for privacy reasons
+patternDrafting/measurements/*.yaml
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
