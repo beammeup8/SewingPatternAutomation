@@ -28,3 +28,25 @@ def create_scoop_neckline(shoulder_height, neckline_depth, neckline_radius):
   
   points = list(np.stack((x_smooth, y_smooth), axis=-1))
   return Line(points, smooth=True)
+
+def create_neckline(neckline_type, shoulder_height, neckline_depth, neckline_radius):
+  """
+  Factory function to create a neckline based on a specified type.
+
+  Args:
+      neckline_type (str): The type of neckline to create ('v-neck', 'square', 'scoop').
+      All other args are passed to the specific neckline function.
+
+  Returns:
+      Line: The Line object representing the created neckline.
+  """
+  match neckline_type:
+    case 'v-neck':
+      return create_v_neckline(shoulder_height, neckline_depth, neckline_radius)
+    case 'square':
+      return create_square_neckline(shoulder_height, neckline_depth, neckline_radius)
+    case 'scoop':
+      return create_scoop_neckline(shoulder_height, neckline_depth, neckline_radius)
+    case _:
+      print(f"Warning: Unknown neckline type '{neckline_type}'. Defaulting to scoop.")
+      return create_scoop_neckline(shoulder_height, neckline_depth, neckline_radius)

@@ -19,6 +19,7 @@ class GarmentSpecs:
         self.bust_ease = kwargs.get('bust_ease', 0)
         self.waist_ease = kwargs.get('waist_ease', 0)
         self.hip_ease = kwargs.get('hip_ease', 0)
+        self.neckline = kwargs.get('neckline', 'scoop') # Default to 'scoop' if not specified
 
     @classmethod
     def from_file(cls, filepath):

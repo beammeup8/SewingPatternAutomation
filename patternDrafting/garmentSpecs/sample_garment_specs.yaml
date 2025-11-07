@@ -7,3 +7,4 @@ neckline_radius: 7
 bust_ease: 0.5
 waist_ease: 1
 hip_ease: 1.5
+neckline: square

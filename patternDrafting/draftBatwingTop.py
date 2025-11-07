@@ -38,16 +38,8 @@ def draft(measurements, garment_specs):
 
   # neckline
   neckline_radius = garment_specs.neckline_radius
-  
-  # This is currently drawing all three neckline options on top of each other.
-  # You can comment out the ones you don't want to see.
-  
-  # Square neckline 
-  pattern_lines.append(create_square_neckline(front_top_y, front_neck_point, neckline_radius))
-  # V-neckline 
-  pattern_lines.append(create_v_neckline(front_top_y, front_neck_point, neckline_radius))
-  # Scoop neckline 
-  pattern_lines.append(create_scoop_neckline(front_top_y, front_neck_point, neckline_radius))
+  neckline_line = create_neckline(garment_specs.neckline, front_top_y, front_neck_point, neckline_radius)
+  pattern_lines.append(neckline_line)
 
   # upper bust line
   upper_bust_x = center_x + measurements.upper_bust/4
