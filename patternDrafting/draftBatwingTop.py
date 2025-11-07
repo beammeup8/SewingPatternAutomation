@@ -12,66 +12,62 @@ def _draft_bodice_half(name, measurements, garment_specs, neckline_depth_spec):
   pattern_lines = []
 
   # Draw drafting lines
-  center_x = 0
-  front_top_y = 0
-
   garm_length = measurements.shoulder_to_waist + measurements.waist_to_hip - garment_specs.height_above_hip
-  front_hem_point = front_top_y + garm_length
   neckline_depth = neckline_depth_spec
-  neck_point = front_top_y + neckline_depth
+  neck_point = neckline_depth
   # Center front line (body)
-  body_lines.append(Line.vertical(center_x, front_top_y, front_hem_point))
+  body_lines.append(Line.vertical(0, 0, garm_length))
   # Center front line (pattern)
-  pattern_lines.append(Line.vertical(center_x, neck_point, front_hem_point))
+  pattern_lines.append(Line.vertical(0, neck_point, garm_length))
 
   # shoulder line
-  shoulder_x = center_x + measurements.shoulders/2
-  body_lines.append(Line.horizontal(front_top_y, center_x, shoulder_x))
+  shoulder_x = measurements.shoulders/2
+  body_lines.append(Line.horizontal(0, 0, shoulder_x))
 
   # neckline
-  neckline_line, neckline_radius = garment_specs.create_bodice_neckline(name, front_top_y)
-  neckline_outside_x = center_x + neckline_radius
+  neckline_line, neckline_radius = garment_specs.create_bodice_neckline(name, 0)
+  neckline_outside_x = neckline_radius
   pattern_lines.append(neckline_line)
 
   # upper bust line
-  upper_bust_x = center_x + measurements.upper_bust/4
-  upper_bust_y = front_top_y + measurements.shoulder_to_armpit
-  body_lines.append(Line.horizontal(upper_bust_y, center_x, upper_bust_x))
+  upper_bust_x = measurements.upper_bust/4
+  upper_bust_y = measurements.shoulder_to_armpit
+  body_lines.append(Line.horizontal(upper_bust_y, 0, upper_bust_x))
   
   # bust line
-  bust_x = center_x + measurements.bust/4
-  bust_y = front_top_y + measurements.shoulder_to_bust
-  body_lines.append(Line.horizontal(bust_y, center_x, bust_x))
+  bust_x = measurements.bust/4
+  bust_y = measurements.shoulder_to_bust
+  body_lines.append(Line.horizontal(bust_y, 0, bust_x))
 
   # waist line
-  waist_x = center_x + measurements.waist/4
-  waist_y = front_top_y + measurements.shoulder_to_waist
-  body_lines.append(Line.horizontal(waist_y, center_x, waist_x))
+  waist_x = measurements.waist/4
+  waist_y = measurements.shoulder_to_waist
+  body_lines.append(Line.horizontal(waist_y, 0, waist_x))
 
   # high hip line
-  high_hip_x = center_x + measurements.high_hip/4
-  high_hip_y = front_top_y + measurements.shoulder_to_waist + measurements.waist_to_high_hip
-  body_lines.append(Line.horizontal(high_hip_y, center_x, high_hip_x))
+  high_hip_x = measurements.high_hip/4
+  high_hip_y = measurements.shoulder_to_waist + measurements.waist_to_high_hip
+  body_lines.append(Line.horizontal(high_hip_y, 0, high_hip_x))
 
   # hip line
-  hip_x = center_x + measurements.hip/4
-  hip_y = front_top_y + measurements.shoulder_to_waist + measurements.waist_to_hip
-  body_lines.append(Line.horizontal(hip_y, center_x, hip_x))
+  hip_x = measurements.hip/4
+  hip_y = measurements.shoulder_to_waist + measurements.waist_to_hip
+  body_lines.append(Line.horizontal(hip_y, 0, hip_x))
 
   # Sleeve Lines
-  sleeve_edge_x = center_x + garment_specs.sleeve_length + measurements.shoulders/2
+  sleeve_edge_x = garment_specs.sleeve_length + measurements.shoulders/2
   armpit_depth = measurements.shoulder_to_bust
-  sleeve_edge_y = (front_top_y + armpit_depth)/2
-  drafting_lines.append(Line.horizontal(sleeve_edge_y, center_x, sleeve_edge_x))
+  sleeve_edge_y = armpit_depth/2
+  drafting_lines.append(Line.horizontal(sleeve_edge_y, 0, sleeve_edge_x))
 
-  pattern_lines.append(Line.horizontal(front_top_y, neckline_outside_x, shoulder_x))
+  pattern_lines.append(Line.horizontal(0, neckline_outside_x, shoulder_x))
 
   sleeve_width = garment_specs.cuff_ease + measurements.above_elbow_circumference
   cuff_top_y = sleeve_edge_y - sleeve_width/4
   cuff_bottom_y = sleeve_edge_y + sleeve_width/4
   pattern_lines.append(Line.vertical(sleeve_edge_x, cuff_top_y, cuff_bottom_y))
 
-  pattern_lines.append(Line([(shoulder_x, front_top_y), (sleeve_edge_x, cuff_top_y)]))
+  pattern_lines.append(Line([(shoulder_x, 0), (sleeve_edge_x, cuff_top_y)]))
 
   # Body Curve
   body_lines.append(Line([(upper_bust_x, upper_bust_y), (bust_x, bust_y), (waist_x, waist_y), (high_hip_x, high_hip_y), (hip_x, hip_y)], smooth=True))
@@ -81,10 +77,10 @@ def _draft_bodice_half(name, measurements, garment_specs, neckline_depth_spec):
   hip_ease = garment_specs.hip_ease/4
 
   side_seam_line = Line([(sleeve_edge_x, cuff_bottom_y), (bust_x + bust_ease, bust_y), (waist_x + waist_ease, waist_y), (high_hip_x + hip_ease, high_hip_y), (hip_x + hip_ease, hip_y)], smooth=True)
-  hem_line = Line([(center_x, front_hem_point), (hip_x + hip_ease, front_hem_point)])
+  hem_line = Line([(0, garm_length), (hip_x + hip_ease, garm_length)])
   
   # Truncate the side seam so it ends at the hemline.
-  pattern_lines.append(side_seam_line.truncate_vertical(max_y=front_hem_point))
+  pattern_lines.append(side_seam_line.truncate_vertical(max_y=garm_length))
   pattern_lines.append(hem_line)
 
   # Assemble the pattern piece
