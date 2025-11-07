@@ -53,7 +53,7 @@ def draw_pattern(
 
         if piece.grainline:
             lines, text = piece.grainline
-            draw_lines(img, lines, LINE_COLOR, scale=scale, offset=piece.offset_in)
+            draw_lines(img, lines, LINE_COLOR, scale=scale, offset=piece.offset_in, thickness=TEXT_THICKNESS)
 
             label_font_size = _draw_label(img, piece, pattern_name, scale)
             # Draw the "CUT ON FOLD" text if it exists
@@ -144,7 +144,7 @@ def _draw_label(img, piece, pattern_name, scale):
 
     # Dynamically determine font scale
     # Get the size of the longest label at a reference scale of 1.0
-    base_text_size, _ = cv.getTextSize(max(labels, key=len), FONT, 1.0, THICKNESS)
+    base_text_size, _ = cv.getTextSize(max(labels, key=len), FONT, 1.0, TEXT_THICKNESS)
     
     # Calculate scale based on width and height constraints
     scale_w = w / (base_text_size[0] * 1.25) # adding a bit of a buffer
@@ -152,22 +152,25 @@ def _draw_label(img, piece, pattern_name, scale):
     scale_h = h / (base_text_size[1] * len(labels) * 1.5) 
     font_scale = min(scale_w, scale_h)
     
-    line_height = cv.getTextSize(labels[0], FONT, font_scale, THICKNESS)[0][1] * 1.5
+    line_height = cv.getTextSize(labels[0], FONT, font_scale, TEXT_THICKNESS)[0][1] * 1.5
     # Calculate the total height of the text block
-    text_block_height = line_height * (len(labels) - 1) + cv.getTextSize(labels[0], FONT, font_scale, THICKNESS)[0][1]
+    text_block_height = line_height * (len(labels) - 1) + cv.getTextSize(labels[0], FONT, font_scale, TEXT_THICKNESS)[0][1]
     
     # Calculate the top-most y-coordinate for the first line of text
-    start_y_px = y + (h - text_block_height) / 2 + cv.getTextSize(labels[0], FONT, font_scale, THICKNESS)[0][1]
+    start_y_px = y + (h - text_block_height) / 2 + cv.getTextSize(labels[0], FONT, font_scale, TEXT_THICKNESS)[0][1]
 
     for i, text in enumerate(labels):
+        # Calculate the width of the current line of text to center it horizontally
+        (text_w, _), _ = cv.getTextSize(text, FONT, font_scale, TEXT_THICKNESS)
+        text_x = x + (w - text_w) // 2
         cv.putText(
             img,
             text,
-            (x, int(start_y_px + i * line_height)),
+            (text_x, int(start_y_px + i * line_height)),
             FONT,
             font_scale,
             LINE_COLOR,
-            THICKNESS,
+            TEXT_THICKNESS,
         )
 
     return font_scale
@@ -187,7 +190,7 @@ def _draw_text_along_line(
 
     # 2. Estimate text height to calculate perpendicular offset
     temp_font_scale = min(1.0, max_font_scale)
-    (_, text_h_estimate), _ = cv.getTextSize(text, FONT, temp_font_scale, THICKNESS)
+    (_, text_h_estimate), _ = cv.getTextSize(text, FONT, temp_font_scale, TEXT_THICKNESS)
     offset_from_line_px = text_h_estimate * 1.15  # 15% buffer
 
     # 3. Calculate the final center point for the text
@@ -223,11 +226,11 @@ def _draw_rotated_text(
 ):
     """Draws rotated text on an image by creating a temporary image and overlaying it."""
     # Determine font scale
-    base_text_size_at_1_0_scale, _ = cv.getTextSize(text, FONT, 1.0, THICKNESS)
+    base_text_size_at_1_0_scale, _ = cv.getTextSize(text, FONT, 1.0, TEXT_THICKNESS)
     calculated_font_scale = max_length_px / base_text_size_at_1_0_scale[0]
     font_scale = min(calculated_font_scale, max_font_scale)
 
-    (text_w, text_h), baseline = cv.getTextSize(text, FONT, font_scale, THICKNESS)
+    (text_w, text_h), baseline = cv.getTextSize(text, FONT, font_scale, TEXT_THICKNESS)
 
     # Create a padded, transparent image for the text to prevent clipping during rotation
     padding = int(max(text_w, text_h) * 0.5)
@@ -244,7 +247,7 @@ def _draw_rotated_text(
         FONT,
         font_scale,
         (255, 255, 255, 255),
-        THICKNESS,
+        TEXT_THICKNESS,
     )
 
     # Rotate the text image
@@ -270,7 +273,7 @@ def _draw_rotated_text(
                     ] + alpha * np.array(color, dtype=np.float32)
 
 
-def draw_lines(img, lines, color, scale=100, offset=(0, 0)):
+def draw_lines(img, lines, color, scale=100, offset=(0, 0), thickness=THICKNESS):
     for line in lines:
         # Get the final render points, which will be smoothed if the line is smooth.
         render_points = line.get_render_points()
@@ -286,5 +289,5 @@ def draw_lines(img, lines, color, scale=100, offset=(0, 0)):
             points_array = np.array(offset_points, dtype=np.int32).reshape((-1, 1, 2))
             # Use a thicker line for masks to ensure contours connect
             cv.polylines(
-                img, [points_array], isClosed=False, color=color, thickness=THICKNESS
+                img, [points_array], isClosed=False, color=color, thickness=thickness
             )
