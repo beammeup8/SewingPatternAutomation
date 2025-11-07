@@ -78,12 +78,12 @@ class PatternPiece:
 
       self.grainline = ([Line(arrow_points)], None)
 
-  def add_fold_line(self, margin_in=1):
+  def add_fold_line(self, margin_in=1, x_coord=0):
       """Adds a 'Cut on Fold' indicator along the center front (x=0)."""
       # Find the min and max Y of the center front line from the pattern lines
-      cf_points = [p for line in self.pattern_lines for p in line.get_render_points() if p[0] == 0]
+      cf_points = [p for line in self.pattern_lines for p in line.get_render_points() if p[0] == x_coord]
       if not cf_points:
-          print("Warning: Could not add fold line. No line found at x=0.")
+          print("Warning: Could not add fold line. No line found at x={x_coord}.")
           return
 
       min_y = min(p[1] for p in cf_points)

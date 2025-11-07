@@ -11,8 +11,8 @@ BOARDER = 2
 
 def draft(measurements, garment_specs):
   # Dimensions in inches
-  total_x_in = 50
-  total_y_in = 100
+  total_x_in = 25
+  total_y_in = 30
   body_lines = []
   drafting_lines = []
   pattern_lines = []
