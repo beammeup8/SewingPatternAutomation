@@ -1,23 +1,15 @@
 # Drafting loosely following this tutorial
 
-from necklines import *
 from util.line import Line
 from util.pattern_piece import PatternPiece
 from util.measurements import Measurements
 from util.garment_specs import GarmentSpecs
 
-SCALE = 100
-BOARDER = 2
-
-def draft(measurements, garment_specs):
-  # Dimensions in inches
-  total_x_in = 25
-  total_y_in = 30
+def _draft_bodice_half(name, measurements, garment_specs, neckline_depth_spec):
+  """Drafts a half bodice piece (either front or back)."""
   body_lines = []
   drafting_lines = []
   pattern_lines = []
-
-  spacing = BOARDER
 
   # Draw drafting lines
   center_x = 0
@@ -25,20 +17,20 @@ def draft(measurements, garment_specs):
 
   garm_length = measurements.shoulder_to_waist + measurements.waist_to_hip - garment_specs.height_above_hip
   front_hem_point = front_top_y + garm_length
-  front_neckline_depth = garment_specs.front_neckline_depth
-  front_neck_point = front_top_y + front_neckline_depth
+  neckline_depth = neckline_depth_spec
+  neck_point = front_top_y + neckline_depth
   # Center front line (body)
   body_lines.append(Line.vertical(center_x, front_top_y, front_hem_point))
   # Center front line (pattern)
-  pattern_lines.append(Line.vertical(center_x, front_neck_point, front_hem_point))
+  pattern_lines.append(Line.vertical(center_x, neck_point, front_hem_point))
 
   # shoulder line
   shoulder_x = center_x + measurements.shoulders/2
   body_lines.append(Line.horizontal(front_top_y, center_x, shoulder_x))
 
   # neckline
-  neckline_radius = garment_specs.neckline_radius
-  neckline_line = create_neckline(garment_specs.neckline, front_top_y, front_neck_point, neckline_radius)
+  neckline_line, neckline_radius = garment_specs.create_bodice_neckline(name, front_top_y)
+  neckline_outside_x = center_x + neckline_radius
   pattern_lines.append(neckline_line)
 
   # upper bust line
@@ -72,7 +64,6 @@ def draft(measurements, garment_specs):
   sleeve_edge_y = (front_top_y + armpit_depth)/2
   drafting_lines.append(Line.horizontal(sleeve_edge_y, center_x, sleeve_edge_x))
 
-  neckline_outside_x = center_x + neckline_radius
   pattern_lines.append(Line.horizontal(front_top_y, neckline_outside_x, shoulder_x))
 
   sleeve_width = garment_specs.cuff_ease + measurements.above_elbow_circumference
@@ -96,27 +87,26 @@ def draft(measurements, garment_specs):
   pattern_lines.append(side_seam_line.truncate_vertical(max_y=front_hem_point))
   pattern_lines.append(hem_line)
 
-  # Define layout offsets
-  front_offset_in = (spacing, spacing)
+  # Assemble the pattern piece
+  piece = PatternPiece(name=name,
+                       body_lines=body_lines,
+                       drafting_lines=drafting_lines,
+                       pattern_lines=pattern_lines)
+  piece.add_fold_line()
+  return piece
 
-  # Assemble the pattern pieces at the end
-  front_piece = PatternPiece(name="Front",
-                             offset_in=front_offset_in,
-                             body_lines=body_lines,
-                             drafting_lines=drafting_lines,
-                             pattern_lines=pattern_lines)
+def draft(measurements, garment_specs):
+  pattern_pieces = []
 
-  # Add grainline or fold line indicator
-  front_piece.add_fold_line()
+  # Draft Front Piece
+  front_piece = _draft_bodice_half("Front", measurements, garment_specs, garment_specs.front_neckline_depth)
+  pattern_pieces.append(front_piece)
 
-  # The back piece drafting would go here
-  # back_offset_in = (spacing, front_offset_in[1] + front_hem_point + spacing)
-  # back_piece = PatternPiece(name="Back", offset_in=back_offset_in)
+  # Draft Back Piece
+  back_piece = _draft_bodice_half("Back", measurements, garment_specs, garment_specs.back_neckline_depth)
+  pattern_pieces.append(back_piece)
   
-  return {
-      'pattern_pieces': [front_piece],
-      'canvas_size': (total_x_in, total_y_in)
-  }
+  return pattern_pieces
 
 if __name__ == "__main__":
   from util.draw import draw_pattern # Import here as it's only used in __main__
@@ -125,14 +115,11 @@ if __name__ == "__main__":
   measurements = Measurements.from_file('patternDrafting/measurements/sample_measurements.yaml')
   garment_specs = GarmentSpecs.from_file('patternDrafting/garmentSpecs/sample_garment_specs.yaml')
 
-  pattern_data = draft(measurements, garment_specs)
+  pattern_pieces = draft(measurements, garment_specs)
   
   draw_pattern(
-      canvas_size_in=pattern_data['canvas_size'],
-      scale=SCALE,
-      pattern_pieces=pattern_data['pattern_pieces'],
+      scale=100, # Pixels per inch
+      pattern_pieces=pattern_pieces,
       output_filepath="testFiles/batwingDraft.png",
       pattern_name="Batwing Top"
   )
-
-  print(pattern_data['canvas_size'])

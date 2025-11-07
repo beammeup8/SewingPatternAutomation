@@ -12,6 +12,7 @@ DRAFTING_COLOR = (0, 255, 0)
 BACKGROUND_COLOR = (0, 0, 0)
 THICKNESS = 10
 TEXT_THICKNESS = THICKNESS // 2
+SPACING = 2 # Inches between pattern pieces
 FONT = cv.FONT_HERSHEY_SIMPLEX
 
 # Debug Colors

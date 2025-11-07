@@ -7,55 +7,64 @@ from .line import Line
 
 
 def draw_pattern(
-    canvas_size_in, scale, pattern_pieces, output_filepath, pattern_name, output=True
+    scale, pattern_pieces, output_filepath, pattern_name, output=True
 ):
     """
-    Creates an image and draws all specified line groups onto it.
+    Calculates layout, creates an image, and draws all pattern pieces onto it.
 
     Args:
-      canvas_size_in: A tuple (width, height) for the image in inches.
       scale: The scale factor (pixels per inch).
       pattern_pieces: A list of PatternPiece objects to draw.
       output_filepath: The path to save the final image file.
       pattern_name: The name of the overall pattern.
       output: A boolean to control if the image is saved to a file.
     """
-    total_x_in, total_y_in = canvas_size_in
+    # --- 1. Calculate Layout ---
+    # Simple vertical stacking layout
+    layouts = []
+    total_width_in = 0
+    current_y_in = SPACING
+    for piece in pattern_pieces:
+        min_x, min_y, max_x, max_y = piece.get_bounding_box()
+        piece_width = max_x - min_x
+        piece_height = max_y - min_y
+        
+        # The offset positions the top-left of the piece's bounding box
+        offset_x = SPACING - min_x
+        offset_y = current_y_in - min_y
+        layouts.append({'offset': (offset_x, offset_y), 'piece': piece})
+        
+        current_y_in += piece_height + SPACING
+        total_width_in = max(total_width_in, piece_width)
+
+    canvas_width_in = total_width_in + 2 * SPACING
+    canvas_height_in = current_y_in
 
     # Image dimensions in pixels
-    img_width_px = round(total_x_in * scale)
-    img_height_px = round(total_y_in * scale)
+    img_width_px = round(canvas_width_in * scale)
+    img_height_px = round(canvas_height_in * scale)
     img = np.full((img_height_px, img_width_px, 3), BACKGROUND_COLOR, dtype=np.uint8)
 
-    for piece in pattern_pieces:
+    # --- 2. Draw Pieces ---
+    for layout in layouts:
+        piece = layout['piece']
+        offset = layout['offset']
         if DRAFTING_LINES:
-            draw_lines(
-                img,
-                piece.body_lines,
-                BODY_COLOR,
-                scale=scale,
-                offset=piece.offset_in,
-            )
-            draw_lines(
-                img,
-                piece.drafting_lines,
-                DRAFTING_COLOR,
-                scale=scale,
-                offset=piece.offset_in,
-            )
+            draw_lines(img, piece.body_lines, BODY_COLOR, scale=scale, offset=offset)
+            draw_lines(img, piece.drafting_lines, DRAFTING_COLOR, scale=scale, offset=offset)
         draw_lines(
             img,
             piece.pattern_lines,
             LINE_COLOR,
             scale=scale,
-            offset=piece.offset_in,
+            offset=offset,
         )
 
         if piece.grainline:
             lines, text = piece.grainline
-            draw_lines(img, lines, LINE_COLOR, scale=scale, offset=piece.offset_in, thickness=TEXT_THICKNESS)
+            draw_lines(img, lines, LINE_COLOR, scale=scale, offset=offset, thickness=TEXT_THICKNESS)
 
-            label_font_size = _draw_label(img, piece, pattern_name, scale)
+            label_font_size = _draw_label(img, piece, pattern_name, scale, offset)
             # Draw the "CUT ON FOLD" text if it exists
             if text:
                 # Assume the first line in the list is the main shaft
@@ -63,7 +72,7 @@ def draw_pattern(
                     img,
                     text,
                     lines[0],
-                    piece.offset_in,
+                    offset,
                     scale,
                     LINE_COLOR,
                     label_font_size,
@@ -72,7 +81,7 @@ def draw_pattern(
     cv.imwrite(output_filepath, img)
 
 
-def _draw_label(img, piece, pattern_name, scale):
+def _draw_label(img, piece, pattern_name, scale, offset):
     """Draws the name, pattern name, and date on a pattern piece."""
     # Create a mask of the pattern piece to find a safe label area
     mask = np.zeros(img.shape[:2], dtype=np.uint8)
@@ -83,7 +92,7 @@ def _draw_label(img, piece, pattern_name, scale):
         piece.pattern_lines,
         (255, 255, 255), # White color for the mask
         scale=scale,
-        offset=piece.offset_in
+        offset=offset
     )
     
     # Find the contour of the drawn shape
@@ -177,7 +186,7 @@ def _draw_label(img, piece, pattern_name, scale):
 
 
 def _draw_text_along_line(
-    img, text, line, piece_offset_in, scale, color, max_font_scale
+    img, text, line, piece_offset, scale, color, max_font_scale
 ):
     """Calculates position and angle, then draws rotated text next to a line."""
     p1_in, p2_in = line.points[0], line.points[1]
@@ -205,8 +214,8 @@ def _draw_text_along_line(
         angle_rad - math.pi / 2
     )
     final_center_px = (
-        round((final_center_x_in + piece_offset_in[0]) * scale),
-        round((final_center_y_in + piece_offset_in[1]) * scale),
+        round((final_center_x_in + piece_offset[0]) * scale),
+        round((final_center_y_in + piece_offset[1]) * scale),
     )
 
     # 4. Call the drawing function
