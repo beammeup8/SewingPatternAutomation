@@ -92,8 +92,8 @@ def draft(measurements, garment_specs):
   side_seam_line = Line([(sleeve_edge_x, cuff_bottom_y), (bust_x + bust_ease, bust_y), (waist_x + waist_ease, waist_y), (high_hip_x + hip_ease, high_hip_y), (hip_x + hip_ease, hip_y)], smooth=True)
   hem_line = Line([(center_x, front_hem_point), (hip_x + hip_ease, front_hem_point)])
   
-  # The intersection logic has been removed. Adding the full lines for now.
-  pattern_lines.append(side_seam_line)
+  # Truncate the side seam so it ends at the hemline.
+  pattern_lines.append(side_seam_line.truncate_vertical(max_y=front_hem_point))
   pattern_lines.append(hem_line)
 
   # Define layout offsets
