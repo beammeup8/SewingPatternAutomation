@@ -1,7 +1,7 @@
 import cv2 as cv
 
 # --- Debugging ---
-DEBUG = False  # Set to False to disable all debug visualizations
+DEBUG = True  # Set to False to disable all debug visualizations
 DRAFTING_LINES=False
 
 # --- Drawing Constants ---

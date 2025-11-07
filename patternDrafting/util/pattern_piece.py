@@ -1,5 +1,7 @@
 from util.line import Line
 import math
+import cv2 as cv
+import numpy as np
 class PatternPiece:
   """
   Represents a single piece of a sewing pattern, like a front, back, or sleeve.
@@ -19,6 +21,8 @@ class PatternPiece:
     self.drafting_lines = drafting_lines if drafting_lines is not None else []
     self.pattern_lines = pattern_lines if pattern_lines is not None else []
     self.grainline = None # Will be a tuple of (list[Line], "text")
+    self._contour_cache = {}
+    self._bounding_box_cache = None
 
   def get_all_lines(self):
     """
@@ -31,6 +35,9 @@ class PatternPiece:
     Calculates the bounding box that encompasses all lines in this piece.
     Returns (min_x, min_y, max_x, max_y) in inches.
     """
+    if self._bounding_box_cache:
+        return self._bounding_box_cache
+
     all_points = []
     for line in self.pattern_lines:
         # Use get_render_points to account for smoothed curves
@@ -44,7 +51,48 @@ class PatternPiece:
     min_y = min(p[1] for p in all_points)
     max_y = max(p[1] for p in all_points)
     
-    return (min_x, min_y, max_x, max_y)
+    self._bounding_box_cache = (min_x, min_y, max_x, max_y)
+    return self._bounding_box_cache
+
+  def get_outline_contour(self, scale=100):
+      """
+      Generates a single, continuous contour for the pattern piece's outline
+      by drawing it on a temporary mask. Caches the result based on scale.
+
+      Args:
+          scale (int): The resolution (pixels per inch) to use for rendering.
+
+      Returns:
+          A NumPy array of contour points in pixel coordinates, or None.
+      """
+      if scale in self._contour_cache:
+          return self._contour_cache[scale]
+
+      if not self.pattern_lines:
+          return None
+
+      # Create a temporary mask just large enough for this piece
+      min_x, min_y, max_x, max_y = self.get_bounding_box()
+      padding = 1  # 1 inch padding
+      width_in = (max_x - min_x) + 2 * padding
+      height_in = (max_y - min_y) + 2 * padding
+      
+      # The offset to draw the piece within this temporary mask
+      temp_offset = (-min_x + padding, -min_y + padding)
+
+      mask = np.zeros((round(height_in * scale), round(width_in * scale)), dtype=np.uint8)
+
+      # Draw the pattern lines onto the mask to create a solid, connected shape
+      from .draw import draw_lines # Local import to avoid circular dependency
+      draw_lines(mask, self.pattern_lines, 255, scale=scale, offset=temp_offset, thickness=5)
+
+      # Find and fill the contour
+      contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+      cv.drawContours(mask, contours, -1, 255, -1)
+      
+      result = max(contours, key=cv.contourArea) if contours else None
+      self._contour_cache[scale] = result
+      return result
 
   def add_grainline(self, length_in=5, angle=90, arrowhead_length=0.5, arrowhead_angle=25):
       """Adds a standard grainline arrow to the center of the piece."""

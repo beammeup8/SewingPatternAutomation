@@ -84,27 +84,27 @@ def draw_pattern(
 def _draw_label(img, piece, pattern_name, scale, offset):
     """Draws the name, pattern name, and date on a pattern piece."""
     # Create a mask of the pattern piece to find a safe label area
-    mask = np.zeros(img.shape[:2], dtype=np.uint8)
-    
-    # Draw the pattern lines onto the mask to create a solid shape
-    draw_lines(
-        mask,
-        piece.pattern_lines,
-        (255, 255, 255), # White color for the mask
-        scale=scale,
-        offset=offset
-    )
-    
-    # Find the contour of the drawn shape
-    piece_contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    if not piece_contours:
+    piece_contour = piece.get_outline_contour(scale=scale)
+    if piece_contour is None:
         print(f"Warning: Could not create a contour for piece '{piece.name}'.")
         return
-    # Fill the contour to ensure it's a solid area before eroding
-    cv.drawContours(mask, piece_contours, -1, 255, -1)
+
+    # Get the piece's bounding box to correctly position the contour on the canvas
+    min_x, min_y, _, _ = piece.get_bounding_box()
+    contour_offset = (round((offset[0] + min_x - 1) * scale), round((offset[1] + min_y - 1) * scale))
+
+    if DEBUG:
+        # Draw the main outline contour for debugging purposes
+        cv.drawContours(img, [piece_contour], -1, (0, 165, 255), 2, offset=contour_offset) # Orange
+
+    # Create a mask on the main image canvas to place the contour
+    mask = np.zeros(img.shape[:2], dtype=np.uint8)
+    
+    cv.drawContours(mask, [piece_contour], -1, 255, -1, offset=contour_offset)
     
     # Erode the mask to find a safe inner area
-    inset_px = int(min(img.shape[:2]) * 0.08)  # 8% of smallest image dimension
+    px, py, pw, ph = cv.boundingRect(piece_contour)
+    inset_px = int(min(pw, ph) * 0.15) # Inset by 15% of the piece's smallest dimension
     kernel = np.ones((inset_px, inset_px), np.uint8)
     eroded_mask = cv.erode(mask, kernel, iterations=1)
 
