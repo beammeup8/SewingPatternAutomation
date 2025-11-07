@@ -34,7 +34,7 @@ class Line:
     """Combines two Line objects by concatenating their points."""
     if not isinstance(other, Line):
       return NotImplemented
-    new_points = self.points + other.points # Assuming points are lists
+    new_points = self.points + other.points
     return Line(new_points, smooth=self.smooth or other.smooth)
 
   @classmethod

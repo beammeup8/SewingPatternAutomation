@@ -34,6 +34,10 @@ def draw_pattern(canvas_size_in, scale, pattern_pieces, output_filepath, pattern
     draw_lines(img, piece.drafting_lines, DRAFTING_COLOR, THICKNESS, scale=scale, offset=piece.offset_in)
     draw_lines(img, piece.pattern_lines, LINE_COLOR, THICKNESS, scale=scale, offset=piece.offset_in)
 
+    if piece.grainline:
+        lines, text = piece.grainline
+        draw_lines(img, lines, LINE_COLOR, THICKNESS, scale=scale, offset=piece.offset_in)
+
     _draw_label(img, piece, pattern_name, scale)
   
   cv.imwrite(output_filepath, img)
@@ -89,16 +93,31 @@ def _draw_label(img, piece, pattern_name, scale):
     line_height = cv.getTextSize(labels[0], font, font_scale, THICKNESS)[0][1] * 1.5
     total_text_height = line_height * (len(labels) - 1)
     start_y_px = y + (h / 2) - (total_text_height / 2)
-
+    
     for i, text in enumerate(labels):
         cv.putText(img, text, (x, int(start_y_px + i * line_height)), font, font_scale, LINE_COLOR, THICKNESS)
+
+    # Draw the "CUT ON FOLD" text if it exists
+    if piece.grainline and piece.grainline[1]:
+        grainline_text = piece.grainline[1]
+        # Assume the first line in the list is the main shaft
+        shaft_line = piece.grainline[0][0]
+        # Position text at the center of the grainline
+        center_x = (shaft_line.points[0][0] + shaft_line.points[1][0]) / 2
+        center_y = (shaft_line.points[0][1] + shaft_line.points[1][1]) / 2
+        text_x_px = round((center_x + piece.offset_in[0]) * scale)
+        text_y_px = round((center_y + piece.offset_in[1]) * scale)
+        cv.putText(img, grainline_text, (text_x_px, text_y_px), font, font_scale, LINE_COLOR, THICKNESS)
 
 def draw_lines(img, lines, color, thickness, scale=1, offset=(0, 0)):
   for line in lines:
     # Get the final render points, which will be smoothed if the line is smooth.
     render_points = line.get_render_points()
-    # Apply offset (in inches), scale, and round to integer pixel coordinates
-    offset_points = [(round((p[0] + offset[0]) * scale), round((p[1] + offset[1]) * scale)) for p in render_points]
-    
-    points_array = np.array(offset_points, dtype=np.int32).reshape((-1, 1, 2))
-    cv.polylines(img, [points_array], isClosed=False, color=color, thickness=thickness)
+    if not isinstance(render_points[0], list):
+        render_points = [render_points]
+    for segment in render_points:
+        # Apply offset (in inches), scale, and round to integer pixel coordinates
+        offset_points = [(round((p[0] + offset[0]) * scale), round((p[1] + offset[1]) * scale)) for p in segment]
+        
+        points_array = np.array(offset_points, dtype=np.int32).reshape((-1, 1, 2))
+        cv.polylines(img, [points_array], isClosed=False, color=color, thickness=thickness)

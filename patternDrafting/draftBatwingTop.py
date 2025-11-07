@@ -114,6 +114,9 @@ def draft(measurements, garment_specs):
                              drafting_lines=drafting_lines,
                              pattern_lines=pattern_lines)
 
+  # Add grainline or fold line indicator
+  front_piece.add_fold_line()
+
   # The back piece drafting would go here
   # back_offset_in = (spacing, front_offset_in[1] + front_hem_point + spacing)
   # back_piece = PatternPiece(name="Back", offset_in=back_offset_in)
