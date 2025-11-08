@@ -20,25 +20,25 @@ def draw_pattern(
       output: A boolean to control if the image is saved to a file.
     """
     # --- 1. Calculate Layout ---
-    # Simple vertical stacking layout
+    # Simple horizontal side-by-side layout
     layouts = []
-    total_width_in = 0
-    current_y_in = SPACING
+    total_height_in = 0
+    current_x_in = SPACING
     for piece in pattern_pieces:
         min_x, min_y, max_x, max_y = piece.get_bounding_box()
         piece_width = max_x - min_x
         piece_height = max_y - min_y
         
         # The offset positions the top-left of the piece's bounding box
-        offset_x = SPACING - min_x
-        offset_y = current_y_in - min_y
+        offset_x = current_x_in - min_x
+        offset_y = SPACING - min_y
         layouts.append({'offset': (offset_x, offset_y), 'piece': piece})
         
-        current_y_in += piece_height + SPACING
-        total_width_in = max(total_width_in, piece_width)
+        current_x_in += piece_width + SPACING
+        total_height_in = max(total_height_in, piece_height)
 
-    canvas_width_in = total_width_in + 2 * SPACING
-    canvas_height_in = current_y_in
+    canvas_width_in = current_x_in
+    canvas_height_in = total_height_in + 2 * SPACING
 
     # Image dimensions in pixels
     img_width_px = round(canvas_width_in * scale)
