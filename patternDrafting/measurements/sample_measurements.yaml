@@ -1,12 +1,32 @@
-upper_bust: 49
-bust: 56
-waist: 45
-high_hip: 54
-hip: 56
-shoulders: 19
-shoulder_to_armpit: 10
-shoulder_to_bust: 12
-shoulder_to_waist: 18
-waist_to_high_hip: 6
-waist_to_hip: 10
-above_elbow_circumference: 16
+shoulders:
+  full: 19
+  front shoulder length: 6
+  back shoulder length: 7
+  nape to shoulder blade: 3
+  armscye depth: 10
+  neck circumference: 19
+  side neck rise: 0.5 # measurement from the nape of the neck to the top of the bone there
+  shoulder slope: 1.75 # vertical measurement from nape of neck to height of shoulder
+bust: 
+  full bust: 56
+  front bust: 33
+  back bust: 23
+  upper bust: 49
+  front upper bust: 20
+  back width: 22
+  shoulder to apex: 15
+  nape to bust: 11
+  apex to apex: 9
+waist:
+  full: 45
+  nape to waist: 18
+hip:
+  high hip: 54
+  full hip: 56
+  waist to high hip: 4
+  waist to high hip curve: 8
+  waist to hip: 6.5
+  waist to hip curve: 11
+arm:
+  above_elbow_circumference: 16
+  bicep: 18

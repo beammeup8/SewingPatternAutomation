@@ -21,14 +21,13 @@ class Line:
     t = np.arange(len(self.points))
     steps = np.linspace(t.min(), t.max(), 500)
 
-    fx = make_interp_spline(t, points_arr[:, 0], k=k, bc_type='natural')
-    fy = make_interp_spline(t, points_arr[:, 1], k=k, bc_type='natural')
+    # Use 'natural' boundary conditions only when appropriate (cubic splines)
+    bc_type = 'natural' if k == 3 else None
 
-    # Cache the render, so it will not be redone
-    self.points = list(np.stack((fx(steps), fy(steps)), axis=-1))
-    self.smooth = False 
+    fx = make_interp_spline(t, points_arr[:, 0], k=k, bc_type=bc_type)
+    fy = make_interp_spline(t, points_arr[:, 1], k=k, bc_type=bc_type)
 
-    return self.points
+    return list(np.stack((fx(steps), fy(steps)), axis=-1))
 
   def __add__(self, other):
     """Combines two Line objects by concatenating their points."""
@@ -36,6 +35,41 @@ class Line:
       return NotImplemented
     new_points = self.points + other.points
     return Line(new_points, smooth=self.smooth or other.smooth)
+
+  def get_midpoint(self):
+      """Calculates the midpoint of a straight line."""
+      if len(self.points) != 2:
+          # For polylines, this would be more complex (finding the center of the arc length)
+          return self.points[len(self.points) // 2]
+      p1, p2 = self.points
+      return ((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)
+
+  def get_perpendicular_point(self, from_point, distance):
+      """Calculates a point at a given distance perpendicular to the line from a specific point."""
+      if len(self.points) != 2:
+          return None # Not implemented for curves
+      p1, p2 = self.points
+      angle_rad = math.atan2(p2[1] - p1[1], p2[0] - p1[0])
+      perp_angle_rad = angle_rad + math.pi / 2
+      
+      new_x = from_point[0] + distance * math.cos(perp_angle_rad)
+      new_y = from_point[1] + distance * math.sin(perp_angle_rad)
+      return (new_x, new_y)
+
+  def get_x_for_y(self, y):
+      """Calculates the x-coordinate on a straight line for a given y-coordinate."""
+      # Get the final rendered points, which may be smoothed.
+      points = self.get_render_points()
+      
+      # Iterate through the line segments to find the intersection.
+      for i in range(len(points) - 1):
+          p1, p2 = points[i], points[i+1]
+          y1, y2 = p1[1], p2[1]
+          # Check if the target y is between the y-coordinates of the segment's points.
+          if (y1 <= y <= y2) or (y2 <= y <= y1):
+              if y2 - y1 != 0: # Avoid division by zero for horizontal segments.
+                  return p1[0] + (y - y1) * (p2[0] - p1[0]) / (y2 - y1)
+      return None # Return None if no intersection is found.
 
   @classmethod
   def horizontal(cls, y, start_x, end_x):

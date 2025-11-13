@@ -6,7 +6,7 @@ class PatternPiece:
   """
   Represents a single piece of a sewing pattern, like a front, back, or sleeve.
   """
-  def __init__(self, name, body_lines=None, drafting_lines=None, pattern_lines=None):
+  def __init__(self, name, body_lines=None, drafting_lines=None, pattern_lines=None, marking_lines=None):
     """
     Initializes a PatternPiece.
 
@@ -15,11 +15,13 @@ class PatternPiece:
       body_lines: An optional list of body Line objects.
       drafting_lines: An optional list of drafting Line objects.
       pattern_lines: An optional list of pattern Line objects.
+      marking_lines: An optional list of internal marking Line objects (e.g., darts).
     """
     self.name = name
     self.body_lines = body_lines if body_lines is not None else []
     self.drafting_lines = drafting_lines if drafting_lines is not None else []
     self.pattern_lines = pattern_lines if pattern_lines is not None else []
+    self.marking_lines = marking_lines if marking_lines is not None else []
     self.grainline = None # Will be a tuple of (list[Line], "text")
     self._contour_cache = {}
     self._bounding_box_cache = None
@@ -28,7 +30,7 @@ class PatternPiece:
     """
     Returns a single list containing all lines from all types.
     """
-    return self.body_lines + self.drafting_lines + self.pattern_lines
+    return self.body_lines + self.drafting_lines + self.pattern_lines + self.marking_lines
 
   def get_bounding_box(self):
     """

@@ -12,7 +12,7 @@ def _draft_bodice_half(name, measurements, garment_specs, neckline_depth_spec):
   pattern_lines = []
 
   # Draw drafting lines
-  garm_length = measurements.shoulder_to_waist + measurements.waist_to_hip - garment_specs.height_above_hip
+  garm_length = measurements.shoulder_to_waist + garment_specs.waist_to_hem
   neckline_depth = neckline_depth_spec
   neck_point = neckline_depth
   # Center front line (body)
@@ -28,6 +28,8 @@ def _draft_bodice_half(name, measurements, garment_specs, neckline_depth_spec):
   neckline_line, neckline_radius = garment_specs.create_bodice_neckline(name, 0)
   neckline_outside_x = neckline_radius
   pattern_lines.append(neckline_line)
+
+  body_lines.append(Line.horizontal(0, 0, shoulder_x))
 
   # upper bust line
   upper_bust_x = measurements.upper_bust/4
@@ -77,11 +79,12 @@ def _draft_bodice_half(name, measurements, garment_specs, neckline_depth_spec):
   hip_ease = garment_specs.hip_ease/4
 
   side_seam_line = Line([(sleeve_edge_x, cuff_bottom_y), (bust_x + bust_ease, bust_y), (waist_x + waist_ease, waist_y), (high_hip_x + hip_ease, high_hip_y), (hip_x + hip_ease, hip_y)], smooth=True)
-  hem_line = Line([(0, garm_length), (hip_x + hip_ease, garm_length)])
   
   # Truncate the side seam so it ends at the hemline.
   pattern_lines.append(side_seam_line.truncate_vertical(max_y=garm_length))
-  pattern_lines.append(hem_line)
+  # Find the exact intersection point for the hem.
+  hem_end_x = side_seam_line.get_x_for_y(garm_length)
+  pattern_lines.append(Line.horizontal(garm_length, 0, hem_end_x))
 
   # Assemble the pattern piece
   piece = PatternPiece(name=name,

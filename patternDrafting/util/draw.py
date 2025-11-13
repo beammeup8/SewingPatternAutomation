@@ -45,6 +45,17 @@ def draw_pattern(
     img_height_px = round(canvas_height_in * scale)
     img = np.full((img_height_px, img_width_px, 3), BACKGROUND_COLOR, dtype=np.uint8)
 
+    # --- Draw Optional Grid ---
+    if DRAW_GRID:
+        # Draw vertical grid lines every inch
+        for i in range(1, int(canvas_width_in)):
+            x_pos = round(i * scale)
+            cv.line(img, (x_pos, 0), (x_pos, img_height_px), GRID_COLOR, 1)
+        # Draw horizontal grid lines every inch
+        for i in range(1, int(canvas_height_in)):
+            y_pos = round(i * scale)
+            cv.line(img, (0, y_pos), (img_width_px, y_pos), GRID_COLOR, 1)
+
     # --- 2. Draw Pieces ---
     for layout in layouts:
         piece = layout['piece']
@@ -52,6 +63,14 @@ def draw_pattern(
         if DRAFTING_LINES:
             draw_lines(img, piece.body_lines, BODY_COLOR, scale=scale, offset=offset)
             draw_lines(img, piece.drafting_lines, DRAFTING_COLOR, scale=scale, offset=offset)
+        # Draw internal marking lines (like darts) with the main pattern line style
+        draw_lines(
+            img,
+            piece.marking_lines,
+            LINE_COLOR,
+            scale=scale,
+            offset=offset,
+        )
         draw_lines(
             img,
             piece.pattern_lines,

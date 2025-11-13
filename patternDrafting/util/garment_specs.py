@@ -13,7 +13,7 @@ class GarmentSpecs:
         """
         self.sleeve_length = kwargs.get('sleeve_length', 0)
         self.cuff_ease = kwargs.get('cuff_ease', 0)
-        self.height_above_hip = kwargs.get('height_above_hip', 0)
+        self.waist_to_hem = kwargs.get('waist_to_hem', 0)
         self.bust_ease = kwargs.get('bust_ease', 0)
         self.waist_ease = kwargs.get('waist_ease', 0)
         self.hip_ease = kwargs.get('hip_ease', 0)
@@ -51,8 +51,8 @@ class GarmentSpecs:
             depth_value = self.back_neckline_depth
             shape = self.back_neckline_shape
 
-        neck_point_y = shoulder_height + depth_value
-        return create_neckline(shape, shoulder_height, neck_point_y, self.neckline_radius), self.neckline_radius
+        # The create_neckline functions expect the y-coordinate at x=0 (center front/back) to be 0.
+        return create_neckline(shape, shoulder_height, depth_value, self.neckline_radius), self.neckline_radius
 
     @classmethod
     def from_file(cls, filepath):

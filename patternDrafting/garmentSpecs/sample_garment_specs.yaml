@@ -1,12 +1,12 @@
 sleeve_length: 8
 cuff_ease: 1
-height_above_hip: 1
+waist_to_hem: 1
 bust_ease: 0.5
 waist_ease: 1
 hip_ease: 1.5
 neckline: 
-  front depth: 7
+  front depth: 3
   back depth: 2
-  radius: 7
-  front shape: square
+  radius: 5
+  front shape: scoop
   back shape: scoop
