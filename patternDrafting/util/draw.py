@@ -7,7 +7,7 @@ from .line import Line
 
 
 def draw_pattern(
-    scale, pattern_pieces, output_filepath, pattern_name, output=True
+    scale, pattern_pieces, seam_allowance, output_filepath, pattern_name, output=True
 ):
     """
     Calculates layout, creates an image, and draws all pattern pieces onto it.
@@ -15,6 +15,7 @@ def draw_pattern(
     Args:
       scale: The scale factor (pixels per inch).
       pattern_pieces: A list of PatternPiece objects to draw.
+      seam_allowance: The seam allowance in inches.
       output_filepath: The path to save the final image file.
       pattern_name: The name of the overall pattern.
       output: A boolean to control if the image is saved to a file.
@@ -22,8 +23,9 @@ def draw_pattern(
     # --- 1. Calculate Layout ---
     # Simple horizontal side-by-side layout
     layouts = []
+    buffer_in = max(SPACING, seam_allowance * 1.5)
     total_height_in = 0
-    current_x_in = SPACING
+    current_x_in = buffer_in
     for piece in pattern_pieces:
         min_x, min_y, max_x, max_y = piece.get_bounding_box()
         piece_width = max_x - min_x
@@ -31,14 +33,14 @@ def draw_pattern(
         
         # The offset positions the top-left of the piece's bounding box
         offset_x = current_x_in - min_x
-        offset_y = SPACING - min_y
+        offset_y = buffer_in - min_y
         layouts.append({'offset': (offset_x, offset_y), 'piece': piece})
         
-        current_x_in += piece_width + SPACING
+        current_x_in += piece_width + buffer_in
         total_height_in = max(total_height_in, piece_height)
 
     canvas_width_in = current_x_in
-    canvas_height_in = total_height_in + 2 * SPACING
+    canvas_height_in = total_height_in + 2 * buffer_in
 
     # Image dimensions in pixels
     img_width_px = round(canvas_width_in * scale)
@@ -71,12 +73,21 @@ def draw_pattern(
             scale=scale,
             offset=offset,
         )
+        # Draw the cut line (solid)
+        draw_lines(
+            img,
+            piece.cut_lines,
+            LINE_COLOR,
+            scale=scale,
+            offset=offset,
+        )
         draw_lines(
             img,
             piece.pattern_lines,
             LINE_COLOR,
             scale=scale,
             offset=offset,
+            is_dashed=True,
         )
 
         if piece.grainline:
@@ -301,21 +312,25 @@ def _draw_rotated_text(
                     ] + alpha * np.array(color, dtype=np.float32)
 
 
-def draw_lines(img, lines, color, scale=100, offset=(0, 0), thickness=THICKNESS):
+def draw_lines(img, lines, color, scale=100, offset=(0, 0), thickness=THICKNESS, is_dashed=False):
     for line in lines:
         # Get the final render points, which will be smoothed if the line is smooth.
         render_points = line.get_render_points()
-        if not isinstance(render_points[0], list):
-            render_points = [render_points]
-        for segment in render_points:
-            # Apply offset (in inches), scale, and round to integer pixel coordinates
+        if render_points: # Apply offset (in inches), scale, and round to integer pixel coordinates
             offset_points = [
                 (round((p[0] + offset[0]) * scale), round((p[1] + offset[1]) * scale))
-                for p in segment
+                for p in render_points
             ]
 
             points_array = np.array(offset_points, dtype=np.int32).reshape((-1, 1, 2))
-            # Use a thicker line for masks to ensure contours connect
-            cv.polylines(
-                img, [points_array], isClosed=False, color=color, thickness=thickness
-            )
+            if is_dashed:
+                # Simulate dashed lines by drawing short segments
+                dash_length = 15
+                for i in range(0, len(offset_points) - 1, dash_length * 2):
+                    start_idx, end_idx = i, min(i + dash_length, len(offset_points) - 1)
+                    if start_idx < end_idx:
+                        cv.polylines(img, [points_array[start_idx:end_idx]], isClosed=False, color=color, thickness=thickness)
+            else:
+                cv.polylines(
+                    img, [points_array], isClosed=False, color=color, thickness=thickness
+                )

@@ -22,6 +22,7 @@ class PatternPiece:
     self.drafting_lines = drafting_lines if drafting_lines is not None else []
     self.pattern_lines = pattern_lines if pattern_lines is not None else []
     self.marking_lines = marking_lines if marking_lines is not None else []
+    self.cut_lines = []
     self.grainline = None # Will be a tuple of (list[Line], "text")
     self._contour_cache = {}
     self._bounding_box_cache = None
@@ -30,7 +31,7 @@ class PatternPiece:
     """
     Returns a single list containing all lines from all types.
     """
-    return self.body_lines + self.drafting_lines + self.pattern_lines + self.marking_lines
+    return self.body_lines + self.drafting_lines + self.pattern_lines + self.marking_lines + self.cut_lines
 
   def get_bounding_box(self):
     """
@@ -41,7 +42,7 @@ class PatternPiece:
         return self._bounding_box_cache
 
     all_points = []
-    for line in self.pattern_lines:
+    for line in self.pattern_lines + self.cut_lines:
         # Use get_render_points to account for smoothed curves
         all_points.extend(line.get_render_points())
     
@@ -95,6 +96,47 @@ class PatternPiece:
       result = max(contours, key=cv.contourArea) if contours else None
       self._contour_cache[scale] = result
       return result
+
+  def add_seam_allowance(self, allowance_in, scale=100):
+      """
+      Generates a seam allowance outline and stores it in `cut_lines`.
+      This method creates a temporary image of the pattern piece, dilates it,
+      and then converts the resulting contour back into a Line object.
+
+      Args:
+          allowance_in (float): The seam allowance in inches.
+          scale (int): The resolution (pixels per inch) to use for rendering.
+      """
+      if not self.pattern_lines:
+          return
+
+      # Create a temporary mask to draw the piece and generate the seam allowance.
+      min_x, min_y, max_x, max_y = self.get_bounding_box()
+      allowance_px = round(allowance_in * scale)
+      padding_in = allowance_in * 2
+      width_in = (max_x - min_x) + padding_in
+      height_in = (max_y - min_y) + padding_in
+      temp_offset = (-min_x + allowance_in, -min_y + allowance_in)
+      mask = np.zeros((round(height_in * scale), round(width_in * scale)), dtype=np.uint8)
+
+      # Draw the pattern lines onto the mask to create a solid, connected shape.
+      from .draw import draw_lines # Local import to avoid circular dependency
+      draw_lines(mask, self.pattern_lines, 255, scale=scale, offset=temp_offset, thickness=5)
+      contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+      cv.drawContours(mask, contours, -1, 255, -1)
+
+      # Dilate the mask to create the seam allowance.
+      dilated_mask = cv.dilate(mask, np.ones((allowance_px, allowance_px), np.uint8), iterations=1)
+
+      # Find the new, larger contour and convert it back to a Line object.
+      contours, _ = cv.findContours(dilated_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+      if contours:
+          new_contour_px = max(contours, key=cv.contourArea)
+          new_points_in = [((p[0][0] / scale) + min_x - allowance_in, (p[0][1] / scale) + min_y - allowance_in) for p in new_contour_px]
+          new_line = Line(new_points_in)
+          if self.grainline and self.grainline[1] == "CUT ON FOLD":
+              new_line.truncate_horizontal(min_x=0)
+          self.cut_lines.append(new_line)
 
   def add_grainline(self, length_in=5, angle=90, arrowhead_length=0.5, arrowhead_angle=25):
       """Adds a standard grainline arrow to the center of the piece."""

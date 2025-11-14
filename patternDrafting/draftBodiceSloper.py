@@ -121,6 +121,7 @@ def draft(measurements, garment_specs):
 
     front_piece = PatternPiece(name="Front Bodice", body_lines=front_body_lines, pattern_lines=front_lines, drafting_lines=front_drafting_lines, marking_lines=front_marking_lines)
     front_piece.add_grainline()
+    front_piece.add_seam_allowance(garment_specs.seam_allowance)
     pattern_pieces.append(front_piece)
 
 
@@ -197,6 +198,7 @@ def draft(measurements, garment_specs):
 
     back_piece = PatternPiece(name="Back Bodice", body_lines=back_body_lines, pattern_lines=back_lines, drafting_lines=back_drafting_lines, marking_lines=back_marking_lines)
     back_piece.add_grainline()
+    back_piece.add_seam_allowance(garment_specs.seam_allowance)
     pattern_pieces.append(back_piece)
 
     return pattern_pieces
@@ -212,6 +214,7 @@ if __name__ == "__main__":
     draw_pattern(
         scale=100,
         pattern_pieces=pattern_pieces,
+        seam_allowance=garment_specs.seam_allowance,
         output_filepath="testFiles/bodiceBlock.png",
         pattern_name="Bodice Block"
     )

@@ -92,6 +92,7 @@ def _draft_bodice_half(name, measurements, garment_specs, neckline_depth_spec):
                        drafting_lines=drafting_lines,
                        pattern_lines=pattern_lines)
   piece.add_fold_line()
+  piece.add_seam_allowance(garment_specs.seam_allowance)
   return piece
 
 def draft(measurements, garment_specs):
@@ -99,10 +100,12 @@ def draft(measurements, garment_specs):
 
   # Draft Front Piece
   front_piece = _draft_bodice_half("Front", measurements, garment_specs, garment_specs.front_neckline_depth)
+  front_piece.add_seam_allowance(garment_specs.seam_allowance)
   pattern_pieces.append(front_piece)
 
   # Draft Back Piece
   back_piece = _draft_bodice_half("Back", measurements, garment_specs, garment_specs.back_neckline_depth)
+  back_piece.add_seam_allowance(garment_specs.seam_allowance)
   pattern_pieces.append(back_piece)
   
   return pattern_pieces
@@ -119,6 +122,7 @@ if __name__ == "__main__":
   draw_pattern(
       scale=100, # Pixels per inch
       pattern_pieces=pattern_pieces,
+      seam_allowance=garment_specs.seam_allowance,
       output_filepath="testFiles/batwingDraft.png",
       pattern_name="Batwing Top"
   )

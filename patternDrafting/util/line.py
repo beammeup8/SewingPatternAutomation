@@ -88,88 +88,46 @@ class Line:
     end_y = start_y + (math.tan(rad_angle) * (end_x - start_x))
     return cls([(start_x, start_y), (end_x, end_y)])
 
+  def _clip_line(self, bound, is_in_lambda, intersection_lambda):
+      """Helper method to perform clipping against a single boundary."""
+      if bound is None:
+          return self.points
+
+      input_points = self.get_render_points()
+      clipped_points = []
+      if not input_points:
+          return []
+
+      for i in range(len(input_points)):
+          p1 = input_points[i-1] if i > 0 else input_points[i]
+          p2 = input_points[i]
+          p1_in = is_in_lambda(p1)
+          p2_in = is_in_lambda(p2)
+
+          if p1_in != p2_in:  # Crosses the boundary
+              intersection_point = intersection_lambda(p1, p2)
+              if intersection_point:
+                  clipped_points.append(intersection_point)
+          
+          if p2_in:
+              clipped_points.append(p2)
+      
+      return clipped_points
+
   def truncate_horizontal(self, min_x=None, max_x=None):
     """
     Truncates the line in place to fit within horizontal bounds (min_x, max_x).
     """
-    if min_x is None and max_x is None:
-        return self
- 
-    # Clip against min_x
-    if min_x is not None:
-        input_points = self.get_render_points()
-        clipped_points = []
-        if input_points:
-            for i in range(len(input_points)):
-                p1 = input_points[i-1] if i > 0 else input_points[i]
-                p2 = input_points[i]
-                p1_in, p2_in = (p1[0] >= min_x), (p2[0] >= min_x)
-                if p1_in != p2_in:
-                    if p2[0] - p1[0] != 0:
-                        intersect_y = p1[1] + (p2[1] - p1[1]) * (min_x - p1[0]) / (p2[0] - p1[0])
-                        clipped_points.append((min_x, intersect_y))
-                if p2_in:
-                    clipped_points.append(p2)
-        self.points = clipped_points
-
-    # Clip against max_x
-    if max_x is not None:
-        input_points = self.get_render_points()
-        clipped_points = []
-        if input_points:
-            for i in range(len(input_points)):
-                p1 = input_points[i-1] if i > 0 else input_points[i]
-                p2 = input_points[i]
-                p1_in, p2_in = (p1[0] <= max_x), (p2[0] <= max_x)
-                if p1_in != p2_in:
-                    if p2[0] - p1[0] != 0:
-                        intersect_y = p1[1] + (p2[1] - p1[1]) * (max_x - p1[0]) / (p2[0] - p1[0])
-                        clipped_points.append((max_x, intersect_y))
-                if p2_in:
-                    clipped_points.append(p2)
-        self.points = clipped_points
-
+    get_y_intersect = lambda b: (lambda p1, p2: (b, p1[1] + (p2[1] - p1[1]) * (b - p1[0]) / (p2[0] - p1[0])) if p2[0] - p1[0] != 0 else None)
+    self.points = self._clip_line(min_x, lambda p: p[0] >= min_x, get_y_intersect(min_x))
+    self.points = self._clip_line(max_x, lambda p: p[0] <= max_x, get_y_intersect(max_x))
     return self
 
   def truncate_vertical(self, min_y=None, max_y=None):
     """
     Truncates the line in place to fit within vertical bounds (min_y, max_y).
     """
-    if min_y is None and max_y is None:
-        return self
-
-    # Clip against min_y
-    if min_y is not None:
-        input_points = self.get_render_points()
-        clipped_points = []
-        if input_points:
-            for i in range(len(input_points)):
-                p1 = input_points[i-1] if i > 0 else input_points[i]
-                p2 = input_points[i]
-                p1_in, p2_in = (p1[1] >= min_y), (p2[1] >= min_y)
-                if p1_in != p2_in:
-                    if p2[1] - p1[1] != 0:
-                        intersect_x = p1[0] + (p2[0] - p1[0]) * (min_y - p1[1]) / (p2[1] - p1[1])
-                        clipped_points.append((intersect_x, min_y))
-                if p2_in:
-                    clipped_points.append(p2)
-        self.points = clipped_points
-
-    # Clip against max_y
-    if max_y is not None:
-        input_points = self.get_render_points()
-        clipped_points = []
-        if input_points:
-            for i in range(len(input_points)):
-                p1 = input_points[i-1] if i > 0 else input_points[i]
-                p2 = input_points[i]
-                p1_in, p2_in = (p1[1] <= max_y), (p2[1] <= max_y)
-                if p1_in != p2_in:
-                    if p2[1] - p1[1] != 0:
-                        intersect_x = p1[0] + (p2[0] - p1[0]) * (max_y - p1[1]) / (p2[1] - p1[1])
-                        clipped_points.append((intersect_x, max_y))
-                if p2_in:
-                    clipped_points.append(p2)
-        self.points = clipped_points
-
+    get_x_intersect = lambda b: (lambda p1, p2: (p1[0] + (p2[0] - p1[0]) * (b - p1[1]) / (p2[1] - p1[1]), b) if p2[1] - p1[1] != 0 else None)
+    self.points = self._clip_line(min_y, lambda p: p[1] >= min_y, get_x_intersect(min_y))
+    self.points = self._clip_line(max_y, lambda p: p[1] <= max_y, get_x_intersect(max_y))
     return self

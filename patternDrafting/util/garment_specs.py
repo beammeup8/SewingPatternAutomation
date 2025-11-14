@@ -17,6 +17,7 @@ class GarmentSpecs:
         self.bust_ease = kwargs.get('bust_ease', 0)
         self.waist_ease = kwargs.get('waist_ease', 0)
         self.hip_ease = kwargs.get('hip_ease', 0)
+        self.seam_allowance = kwargs.get('seam_allowance', 0.5)
 
         neckline_specs = kwargs.get('neckline', {})
         self.front_neckline_depth = neckline_specs.get('front depth', 0)
