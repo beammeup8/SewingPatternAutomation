@@ -113,70 +113,46 @@ def draw_pattern(
 
 def _draw_label(img, piece, pattern_name, scale, offset):
     """Draws the name, pattern name, and date on a pattern piece."""
-    # Create a mask of the pattern piece to find a safe label area
-    piece_contour = piece.get_outline_contour(scale=scale)
-    if piece_contour is None:
-        print(f"Warning: Could not create a contour for piece '{piece.name}'.")
-        return
-
-    # Get the piece's bounding box to correctly position the contour on the canvas
-    min_x, min_y, _, _ = piece.get_bounding_box()
-    contour_offset = (round((offset[0] + min_x - 1) * scale), round((offset[1] + min_y - 1) * scale))
-
-    if DEBUG:
-        # Draw the main outline contour for debugging purposes
-        cv.drawContours(img, [piece_contour], -1, (0, 165, 255), 2, offset=contour_offset) # Orange
-
-    # Create a mask on the main image canvas to place the contour
-    mask = np.zeros(img.shape[:2], dtype=np.uint8)
-    
-    cv.drawContours(mask, [piece_contour], -1, 255, -1, offset=contour_offset)
-    
-    # Erode the mask to find a safe inner area
-    px, py, pw, ph = cv.boundingRect(piece_contour)
-    inset_px = int(min(pw, ph) * 0.15) # Inset by 15% of the piece's smallest dimension
-    kernel = np.ones((inset_px, inset_px), np.uint8)
-    eroded_mask = cv.erode(mask, kernel, iterations=1)
-
-    # Find the bounding box of the safe area
-    contours, _ = cv.findContours(eroded_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    if not contours:
+    # Get the label bounding box from the piece itself
+    label_box_data = piece.get_label_box(scale=scale)
+    if label_box_data is None:
         print(
             f"Warning: Cannot draw label for piece '{piece.name}'. No safe area found after erosion."
         )
         return
-    
-    if DEBUG:
-        # Draw the found contour for the label area
-        cv.drawContours(img, contours, -1, DEBUG_CONTOUR_COLOR, 3)
+    x_in, y_in, w_in, h_in, eroded_mask = label_box_data
 
-    x, y, w, h = cv.boundingRect(max(contours, key=cv.contourArea))
-    # Use distance transform to find the point furthest from any edge.
-    # This gives us the safest center point for our label.
-    dist_transform = cv.distanceTransform(eroded_mask, cv.DIST_L2, 5)
-    
-    # Find the point with the maximum distance (the "pole of inaccessibility")
-    _, radius, _, center_point_px = cv.minMaxLoc(dist_transform)
-    
-    if DEBUG:
-        # Draw the pole of inaccessibility
-        cv.circle(img, center_point_px, 10, DEBUG_POLE_COLOR, -1)
-    
-    # The radius is the distance to the nearest edge. A square with a side of
-    # 2*r/sqrt(2) will fit inside this circle. We can use this to define our
-    # bounding box. Let's be slightly more conservative to ensure it fits.
-    box_half_width = int(radius / math.sqrt(2) * 0.9)
+    # Apply the piece's layout offset to the label coordinates
+    x = round((x_in + offset[0]) * scale) 
+    y = round((y_in + offset[1]) * scale) 
+    w = round(w_in * scale)
+    h = round(h_in * scale)
 
-    # Define the bounding box based on this center and calculated width.
-    # center_point_px is (x, y) which is (col, row)
-    x = center_point_px[0] - box_half_width
-    y = center_point_px[1] - box_half_width
-    w = h = int(box_half_width * 2)
-
+    print(f"Drawing label for piece '{piece.name}' at ({x}, {y}) with size ({w}, {h}).")
+    print(f"Original label box: ({x_in}, {y_in}, {w_in}, {h_in})")
+    print(f"Offset: {offset}")
 
     if DEBUG:
+        # Draw the debug visualizations
+        piece_contour = piece.get_outline_contour(scale=scale)
+        min_x_in, min_y_in, _, _ = piece.get_bounding_box()
+        
+        # Calculate the absolute offset for drawing debug contours on the main canvas
+        abs_contour_offset = (round((offset[0] + min_x_in - 1) * scale), round((offset[1] + min_y_in - 1) * scale))
+        
+        # Draw the main outline contour
+        cv.drawContours(img, [piece_contour], -1, (0, 165, 255), 2, offset=abs_contour_offset)
+
+        # Draw the eroded contour
+        # The eroded mask is relative to the temporary mask inside get_label_box.
+        # To place it correctly, we need to find the origin of that temporary mask on the final canvas.
+        eroded_contours, _ = cv.findContours(eroded_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+        eroded_origin_on_canvas = (round((offset[0] + min_x_in - 1) * scale), round((offset[1] + min_y_in - 1) * scale))
+        cv.drawContours(img, eroded_contours, -1, DEBUG_CONTOUR_COLOR, 3, offset=eroded_origin_on_canvas)
+        
         # Draw the bounding box for the text area
         cv.rectangle(img, (x, y), (x + w, y + h), DEBUG_BBOX_COLOR, 2)
+
 
     today_str = date.today().strftime("%Y-%m-%d")
     labels = [piece.name, pattern_name, today_str]
@@ -312,6 +288,46 @@ def _draw_rotated_text(
                     ] + alpha * np.array(color, dtype=np.float32)
 
 
+def _draw_dashed_polyline(img, points, color, thickness):
+    """Draws a dashed polyline by iterating through segments and tracking distance."""
+    dash_length = 15
+    gap_length = 15
+    total_length = dash_length + gap_length
+    dist_along_path = 0
+
+    for i in range(len(points) - 1):
+        p1 = points[i]
+        p2 = points[i+1]
+        segment_len = math.dist(p1, p2)
+        
+        if segment_len == 0:
+            continue
+
+        # Vector for the current segment
+        dx, dy = p2[0] - p1[0], p2[1] - p1[1]
+        
+        # Current position along the segment
+        current_pos_on_segment = 0
+
+        while current_pos_on_segment < segment_len:
+            # Determine if we are in a dash or a gap
+            is_in_dash = (dist_along_path % total_length) < dash_length
+            
+            # Find the distance to the end of the current phase (dash or gap)
+            remaining_in_phase = dash_length - (dist_along_path % total_length) if is_in_dash else total_length - (dist_along_path % total_length)
+            
+            # Distance to move is the smaller of remaining phase or remaining segment
+            dist_to_end_of_segment = segment_len - current_pos_on_segment
+            step = min(remaining_in_phase, dist_to_end_of_segment)
+
+            if is_in_dash:
+                start_draw_point = (int(p1[0] + (current_pos_on_segment / segment_len) * dx), int(p1[1] + (current_pos_on_segment / segment_len) * dy))
+                end_draw_point = (int(p1[0] + ((current_pos_on_segment + step) / segment_len) * dx), int(p1[1] + ((current_pos_on_segment + step) / segment_len) * dy))
+                cv.line(img, start_draw_point, end_draw_point, color, thickness)
+
+            dist_along_path += step
+            current_pos_on_segment += step
+
 def draw_lines(img, lines, color, scale=100, offset=(0, 0), thickness=THICKNESS, is_dashed=False):
     for line in lines:
         # Get the final render points, which will be smoothed if the line is smooth.
@@ -324,12 +340,7 @@ def draw_lines(img, lines, color, scale=100, offset=(0, 0), thickness=THICKNESS,
 
             points_array = np.array(offset_points, dtype=np.int32).reshape((-1, 1, 2))
             if is_dashed:
-                # Simulate dashed lines by drawing short segments
-                dash_length = 15
-                for i in range(0, len(offset_points) - 1, dash_length * 2):
-                    start_idx, end_idx = i, min(i + dash_length, len(offset_points) - 1)
-                    if start_idx < end_idx:
-                        cv.polylines(img, [points_array[start_idx:end_idx]], isClosed=False, color=color, thickness=thickness)
+                _draw_dashed_polyline(img, offset_points, color, thickness)
             else:
                 cv.polylines(
                     img, [points_array], isClosed=False, color=color, thickness=thickness

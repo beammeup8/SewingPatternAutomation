@@ -2,6 +2,10 @@ from util.line import Line
 import math
 import cv2 as cv
 import numpy as np
+
+PADDING_IN = 1  # Inches of padding for temporary masks
+LABEL_BUFFER = 0.15 # Percentage of smallest dimension to inset for label placement
+
 class PatternPiece:
   """
   Represents a single piece of a sewing pattern, like a front, back, or sleeve.
@@ -76,12 +80,11 @@ class PatternPiece:
 
       # Create a temporary mask just large enough for this piece
       min_x, min_y, max_x, max_y = self.get_bounding_box()
-      padding = 1  # 1 inch padding
-      width_in = (max_x - min_x) + 2 * padding
-      height_in = (max_y - min_y) + 2 * padding
+      width_in = (max_x - min_x) + 2 * PADDING_IN
+      height_in = (max_y - min_y) + 2 * PADDING_IN
       
       # The offset to draw the piece within this temporary mask
-      temp_offset = (-min_x + padding, -min_y + padding)
+      temp_offset = (-min_x + PADDING_IN, -min_y + PADDING_IN)
 
       mask = np.zeros((round(height_in * scale), round(width_in * scale)), dtype=np.uint8)
 
@@ -96,6 +99,57 @@ class PatternPiece:
       result = max(contours, key=cv.contourArea) if contours else None
       self._contour_cache[scale] = result
       return result
+
+  def get_label_box(self, scale=100):
+      """
+      Calculates the optimal bounding box for placing a label inside the piece.
+      This is done by eroding the piece's shape and finding the largest
+      inscribed rectangle within the eroded area.
+
+      Args:
+          scale (int): The resolution (pixels per inch) to use for rendering.
+
+      Returns:
+          A tuple (x, y, w, h) for the bounding box in pixel coordinates,
+          and the eroded mask for debug drawing, or None.
+      """
+      outline_contour = self.get_outline_contour(scale=scale)
+      if outline_contour is None:
+          return None
+
+      # Create a mask from the contour to perform erosion. This mask is the same
+      # size as the one used to generate the contour, ensuring a consistent coordinate system.
+      min_x, min_y, max_x, max_y = self.get_bounding_box()
+      width_in = (max_x - min_x) + 2 * PADDING_IN
+      height_in = (max_y - min_y) + 2 * PADDING_IN
+      mask = np.zeros((round(height_in * scale), round(width_in * scale)), dtype=np.uint8)
+      cv.drawContours(mask, [outline_contour], -1, 255, -1)
+
+      # Erode the mask to find a safe inner area
+      inset_px = int(min(mask.shape) * LABEL_BUFFER) # Inset by a percentage of the smallest dimension
+      kernel = np.ones((inset_px, inset_px), np.uint8)
+      eroded_mask = cv.erode(mask, kernel, iterations=1)
+
+      # Find the "pole of inaccessibility" to center the label box
+      dist_transform = cv.distanceTransform(eroded_mask, cv.DIST_L2, 5)
+      _, radius, _, center_point = cv.minMaxLoc(dist_transform)
+
+      if radius == 0:
+          return None # No safe area found
+
+      # Calculate the largest square that fits, centered on the pole
+      box_half_width = int(radius / math.sqrt(2) * 0.9)
+
+      print(f"Radius: {radius}, Box half width: {box_half_width}")
+      print(f"Center point: {center_point}")
+      
+      # Switch back to piece coordinates
+      min_x_in, min_y_in, _, _ = self.get_bounding_box()
+      x = (center_point[0] - box_half_width) / scale - PADDING_IN + min_x_in
+      y = (center_point[1] - box_half_width) / scale - PADDING_IN + min_y_in
+      w = h = (box_half_width * 2) / scale
+
+      return (x, y, w, h, eroded_mask)
 
   def add_seam_allowance(self, allowance_in, scale=100):
       """

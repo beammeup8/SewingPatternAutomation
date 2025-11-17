@@ -104,14 +104,16 @@ class Line:
           p1_in = is_in_lambda(p1)
           p2_in = is_in_lambda(p2)
 
-          if p1_in != p2_in:  # Crosses the boundary
-              intersection_point = intersection_lambda(p1, p2)
-              if intersection_point:
-                  clipped_points.append(intersection_point)
-          
           if p2_in:
+              if not p1_in:
+                  # p1 is out, p2 is in: add intersection and p2
+                  intersection_point = intersection_lambda(p1, p2)
+                  if intersection_point: clipped_points.append(intersection_point)
               clipped_points.append(p2)
-      
+          elif p1_in:
+              # p1 is in, p2 is out: add intersection
+              intersection_point = intersection_lambda(p1, p2)
+              if intersection_point: clipped_points.append(intersection_point)
       return clipped_points
 
   def truncate_horizontal(self, min_x=None, max_x=None):

@@ -1,7 +1,7 @@
 import cv2 as cv
 
 # --- Debugging ---
-DEBUG = False  # Set to False to disable all debug visualizations
+DEBUG = True  # Set to False to disable all debug visualizations
 DRAFTING_LINES = False
 DRAW_GRID = True # Set to False to hide the 1-inch grid
 
