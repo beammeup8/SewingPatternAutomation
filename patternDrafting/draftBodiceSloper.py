@@ -3,7 +3,9 @@ from util.pattern_piece import PatternPiece
 import math
 from util.measurements import Measurements
 from util.garment_specs import GarmentSpecs
-from util.darts import create_dart
+from util.dart import Dart
+
+DART_ROTATION_THRESHOLD = 1.0 # Inches of waist suppression below which darts are combined
 
 def draft(measurements, garment_specs):
     """
@@ -110,14 +112,18 @@ def draft(measurements, garment_specs):
 
     bust_dart_center_y = bust_point_y
     bust_dart_center_x = side_seam_line.get_x_for_y(bust_dart_center_y)
-    front_marking_lines.extend(create_dart(side_seam_line, (bust_dart_center_x, bust_dart_center_y), bust_dart_intake, (dart_tip_x, bust_point_y)))
+    bust_dart = Dart(side_seam_line, (bust_dart_center_x, bust_dart_center_y), bust_dart_intake, (dart_tip_x, bust_point_y))
+    if bust_dart:
+        front_marking_lines.extend([bust_dart.leg1, bust_dart.leg2])
 
     # Waist Dart
     # The remaining 2/3 of suppression goes into the vertical waist dart
     waist_dart_width = total_front_waist_suppression * (2/3)
     dart_center_x = bust_point_x
     dart_tip_y = bust_point_y + 1.5
-    front_marking_lines.extend(create_dart(Line.horizontal(center_front_y, 0, front_waist_x), (dart_center_x, center_front_y), waist_dart_width, (dart_center_x, dart_tip_y)))
+    waist_dart = Dart(Line.horizontal(center_front_y, 0, front_waist_x), (dart_center_x, center_front_y), waist_dart_width, (dart_center_x, dart_tip_y))
+    if waist_dart:
+        front_marking_lines.extend([waist_dart.leg1, waist_dart.leg2])
 
     front_piece = PatternPiece(name="Front Bodice", body_lines=front_body_lines, pattern_lines=front_lines, drafting_lines=front_drafting_lines, marking_lines=front_marking_lines)
     front_piece.add_grainline()
@@ -142,11 +148,6 @@ def draft(measurements, garment_specs):
     back_lines.append(Line.vertical(0, back_neck_depth, center_back_y))
     back_lines.append(back_neckline)
 
-    # Shoulder
-    # The back shoulder seam is drafted longer and then shortened by the dart.
-    shoulder_line = Line([(neckline_edge, side_neck_rise), (neck_width + measurements.back_shoulder_length, shoulder_slope_drop)])
-    back_lines.append(shoulder_line)
-
     # Armscye
     across_back = measurements.across_back / 2
 
@@ -156,15 +157,6 @@ def draft(measurements, garment_specs):
     back_drafting_lines.append(Line.vertical(back_width, 0, center_back_y))
     back_body_lines.append(Line.horizontal(armscye_guide_y, 0, across_back))
     back_body_lines.append(Line.horizontal(measurements.back_bust_height, 0, back_width))
-
-    # Use the same drafting logic for the back armscye.
-    shoulder_point_back = shoulder_line.points[-1]
-    curve_start_point_back = shoulder_line.get_perpendicular_point(shoulder_point_back, armscye_straight_len)
-
-    # The third guide point is on a 1-inch diagonal from the back-width/armscye corner.
-    guide_point_3_back = (across_back - diagonal_guide_len * math.cos(math.radians(45)), armscye_depth - diagonal_guide_len * math.sin(math.radians(45)))
-    back_armscye_points = [shoulder_point_back, curve_start_point_back, guide_point_3_back, (back_width, armscye_depth)]
-    back_lines.append(Line(back_armscye_points, smooth=True))
 
     # Calculate total waist suppression for the back
     total_back_waist_suppression = back_width - (waist_circ / 4)
@@ -181,20 +173,46 @@ def draft(measurements, garment_specs):
     back_hem_end_x = back_side_seam_line.get_x_for_y(center_back_y)
     back_lines.append(Line.horizontal(center_back_y, 0, back_hem_end_x))
 
-    # Darts
-    # Shoulder Dart
-    dart_intake = measurements.back_shoulder_length - measurements.shoulder_length
-    dart_length = measurements.nape_to_shoulder_blade
-    shoulder_midpoint = shoulder_line.get_midpoint()
-    shoulder_dart_tip = shoulder_line.get_perpendicular_point(shoulder_midpoint, dart_length)
-    back_marking_lines.extend(create_dart(shoulder_line, shoulder_midpoint, dart_intake, shoulder_dart_tip))
+    # --- Darts and Final Seams for Back ---
+    shoulder_dart_intake = measurements.back_shoulder_length - measurements.shoulder_length
 
-    # Waist Dart
+    if total_back_waist_suppression < DART_ROTATION_THRESHOLD:
+        # If waist shaping is minimal, rotate the shoulder dart into the waist dart.
+        print("Rotating back shoulder dart into waist dart.")
+        # Draw the shoulder seam at its final (shorter) length.
+        shoulder_line = Line([(neckline_edge, side_neck_rise), (neck_width + measurements.shoulder_length, shoulder_slope_drop)])
+        
+        # The waist dart now absorbs all suppression.
+        back_waist_dart_width = total_back_waist_suppression + shoulder_dart_intake
+    else:
+        # If there's significant waist shaping, use both a shoulder and waist dart.
+        # Draw the shoulder seam at its longer length to accommodate the dart.
+        shoulder_line = Line([(neckline_edge, side_neck_rise), (neck_width + measurements.back_shoulder_length, shoulder_slope_drop)])
+        
+        # Create the shoulder dart.
+        dart_length = measurements.nape_to_shoulder_blade
+        shoulder_midpoint = shoulder_line.get_midpoint()
+        shoulder_dart_tip = shoulder_line.get_perpendicular_point(shoulder_midpoint, dart_length)
+        shoulder_dart = Dart(shoulder_line, shoulder_midpoint, shoulder_dart_intake, shoulder_dart_tip)
+        if shoulder_dart and shoulder_dart.leg1:
+            back_marking_lines.extend([shoulder_dart.leg1, shoulder_dart.leg2])
+        
+        # The waist dart takes the remaining 2/3 of waist suppression.
+        back_waist_dart_width = total_back_waist_suppression * (2/3)
+
+    back_lines.append(shoulder_line)
+    shoulder_point_back = shoulder_line.points[-1]
+    curve_start_point_back = shoulder_line.get_perpendicular_point(shoulder_point_back, armscye_straight_len)
+    guide_point_3_back = (across_back - diagonal_guide_len * math.cos(math.radians(45)), armscye_depth - diagonal_guide_len * math.sin(math.radians(45)))
+    back_armscye_points = [shoulder_point_back, curve_start_point_back, guide_point_3_back, (back_width, armscye_depth)]
+    back_lines.append(Line(back_armscye_points, smooth=True))
+
+    # Create the waist dart legs to be passed to the truing function
     back_dart_center_x = back_width / 2
-    # The remaining 2/3 of suppression goes into the vertical waist dart
-    back_waist_dart_width = total_back_waist_suppression * (2/3)
     back_dart_tip_y = armscye_depth + 1
-    back_marking_lines.extend(create_dart(Line.horizontal(center_back_y, 0, back_waist_x), (back_dart_center_x, center_back_y), back_waist_dart_width, (back_dart_center_x, back_dart_tip_y)))
+    back_waist_dart = Dart(Line.horizontal(center_back_y, 0, back_waist_x), (back_dart_center_x, center_back_y), back_waist_dart_width, (back_dart_center_x, back_dart_tip_y))
+    if back_waist_dart:
+        back_marking_lines.extend([back_waist_dart.leg1, back_waist_dart.leg2])
 
     back_piece = PatternPiece(name="Back Bodice", body_lines=back_body_lines, pattern_lines=back_lines, drafting_lines=back_drafting_lines, marking_lines=back_marking_lines)
     back_piece.add_grainline()

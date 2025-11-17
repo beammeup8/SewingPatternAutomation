@@ -241,3 +241,50 @@ class PatternPiece:
       bottom_t = Line([(line_x - margin_in, bottom_y), (line_x, bottom_y)])
 
       self.grainline = ([shaft, top_t, bottom_t], "CUT ON FOLD")
+
+  def true_dart(self, dart_legs, is_waist_dart=False):
+      """
+      Adjusts the cut line to 'true' a dart, adding a dart cap or dipping the hem.
+      This ensures seam lines match up after the dart is sewn.
+      """
+      if not self.cut_lines or not dart_legs:
+          return
+
+      cut_line = self.cut_lines[0]
+      dart_tip = dart_legs[0].points[1]
+      leg1_start = dart_legs[0].points[0]
+      leg2_start = dart_legs[1].points[0]
+
+      # Find the points on the cut line that correspond to the dart legs.
+      # This is a simplification; a full intersection algorithm would be more robust.
+      # For now, we find the closest points on the cut line.
+      cut_points = cut_line.get_render_points()
+      if not cut_points:
+          return
+
+      try:
+          idx1 = min(range(len(cut_points)), key=lambda i: math.dist(cut_points[i], leg1_start))
+          idx2 = min(range(len(cut_points)), key=lambda i: math.dist(cut_points[i], leg2_start))
+      except ValueError:
+          return # No points on cut line
+
+      start_idx, end_idx = min(idx1, idx2), max(idx1, idx2)
+
+      if is_waist_dart:
+          # Dip the hemline to true the waist dart
+          dart_width = math.dist(leg1_start, leg2_start)
+          dip_depth = dart_width * 0.25  # Heuristic for dip amount
+          mid_idx = (start_idx + end_idx) // 2
+          if mid_idx < len(cut_points):
+              original_point = cut_points[mid_idx]
+              dipped_point = (original_point[0], original_point[1] + dip_depth)
+              new_cut_points = cut_points[:mid_idx] + [dipped_point] + cut_points[mid_idx+1:]
+              self.cut_lines[0] = Line(new_cut_points, smooth=True)
+      else: # Side seam dart
+          # Add a dart cap to true the side seam dart
+          dart_midpoint_on_seam = ((leg1_start[0] + leg2_start[0]) / 2, (leg1_start[1] + leg2_start[1]) / 2)
+          vx = dart_midpoint_on_seam[0] - dart_tip[0] # Vector from dart tip to midpoint on seam
+          vy = dart_midpoint_on_seam[1] - dart_tip[1]
+          cap_point = (dart_midpoint_on_seam[0] + vx * 0.1, dart_midpoint_on_seam[1] + vy * 0.1) # Project a point outwards
+          new_cut_points = cut_points[:start_idx+1] + [cap_point] + cut_points[end_idx:]
+          self.cut_lines[0] = Line(new_cut_points, smooth=True)

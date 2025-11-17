@@ -18,7 +18,9 @@ bust:
   nape to bust: 11
   apex to apex: 9
 waist:
-  full: 45
+  full: 43
+  front: 22.5
+  back: 21.5
   nape to waist: 18
 hip:
   high hip: 54
