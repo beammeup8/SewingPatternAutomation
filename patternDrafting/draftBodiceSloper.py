@@ -113,8 +113,8 @@ def draft(measurements, garment_specs):
 
     bust_dart_center_y = bust_point_y
     bust_dart_center_x = side_seam_line.get_x_for_y(bust_dart_center_y)
-    bust_dart = Dart(side_seam_line, (bust_dart_center_x, bust_dart_center_y), bust_dart_intake, (dart_tip_x, bust_point_y))
-    if bust_dart:
+    bust_dart = Dart(side_seam_line, (bust_dart_center_x, bust_dart_center_y), bust_dart_intake, (dart_tip_x, bust_point_y), name="Bust Dart")
+    if bust_dart and bust_dart.leg1:
         front_marking_lines.append(bust_dart)
 
     # Waist Dart
@@ -123,7 +123,7 @@ def draft(measurements, garment_specs):
     dart_center_x = bust_point_x
     dart_tip_y = bust_point_y + 1.5
     hem_line_for_dart = Line.horizontal(center_front_y, 0, front_waist_x)
-    waist_dart = Dart(hem_line_for_dart, (dart_center_x, center_front_y), waist_dart_width, (dart_center_x, dart_tip_y))
+    waist_dart = Dart(hem_line_for_dart, (dart_center_x, center_front_y), waist_dart_width, (dart_center_x, dart_tip_y), name="Front Waist Dart")
     if waist_dart and waist_dart.leg1:
         front_marking_lines.append(waist_dart)
 
@@ -195,8 +195,8 @@ def draft(measurements, garment_specs):
         dart_length = measurements.nape_to_shoulder_blade
         shoulder_midpoint = shoulder_line.get_midpoint()
         shoulder_dart_tip = shoulder_line.get_perpendicular_point(shoulder_midpoint, dart_length)
-        shoulder_dart = Dart(shoulder_line, shoulder_midpoint, shoulder_dart_intake, shoulder_dart_tip)
-        if shoulder_dart:
+        shoulder_dart = Dart(shoulder_line, shoulder_midpoint, shoulder_dart_intake, shoulder_dart_tip, name="Shoulder Dart")
+        if shoulder_dart and shoulder_dart.leg1:
             back_marking_lines.append(shoulder_dart)
         
         # The waist dart takes the remaining 2/3 of waist suppression.
@@ -213,8 +213,8 @@ def draft(measurements, garment_specs):
     back_dart_center_x = back_width / 2
     back_dart_tip_y = armscye_depth + 1
     back_hem_for_dart = Line.horizontal(center_back_y, 0, back_waist_x)
-    back_waist_dart = Dart(back_hem_for_dart, (back_dart_center_x, center_back_y), back_waist_dart_width, (back_dart_center_x, back_dart_tip_y))
-    if back_waist_dart:
+    back_waist_dart = Dart(back_hem_for_dart, (back_dart_center_x, center_back_y), back_waist_dart_width, (back_dart_center_x, back_dart_tip_y), name="Back Waist Dart")
+    if back_waist_dart and back_waist_dart.leg1:
         back_marking_lines.append(back_waist_dart)
 
     back_piece = PatternPiece(name="Back Bodice", body_lines=back_body_lines, pattern_lines=back_lines, drafting_lines=back_drafting_lines, marking_lines=back_marking_lines)
@@ -234,8 +234,7 @@ def draft(measurements, garment_specs):
 
     # 2. Get the front side seam and bust dart from the front piece.
     front_side_seam = front_piece.pattern_lines[-2]
-    # Find the bust dart object in the marking lines
-    front_bust_dart = next((m for m in front_piece.marking_lines if isinstance(m, Dart) and m.seam_line == front_side_seam), None)
+    front_bust_dart = front_piece.get_marking_by_name("Bust Dart")
     if not front_bust_dart:
         print("Warning: Could not find front bust dart for truing side seams.")
         return pattern_pieces
@@ -264,8 +263,7 @@ def draft(measurements, garment_specs):
     front_hem = front_piece.pattern_lines[-1]
     front_hem.points = [(0, adjusted_front_waist_y), (front_side_seam.points[1][0], adjusted_front_waist_y)]
 
-    # Find and update the waist dart
-    front_waist_dart = next((m for m in front_piece.marking_lines if isinstance(m, Dart) and m.seam_line.points[0][1] == center_front_y), None)
+    front_waist_dart = front_piece.get_marking_by_name("Front Waist Dart")
     if not front_waist_dart:
         print("Warning: Could not find front waist dart for truing side seams.")
         return pattern_pieces

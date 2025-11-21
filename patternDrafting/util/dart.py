@@ -4,7 +4,7 @@ import math
 class Dart:
     """Represents a dart in a sewing pattern."""
 
-    def __init__(self, seam_line, center_point_on_seam, dart_width, dart_tip):
+    def __init__(self, seam_line, center_point_on_seam, dart_width, dart_tip, name=None):
         """
         Initializes a Dart object.
 
@@ -13,8 +13,10 @@ class Dart:
             center_point_on_seam (tuple): The (x, y) point on the seam line where the dart is centered.
             dart_width (float): The total width of the dart opening, measured along the seam.
             dart_tip (tuple): The (x, y) point of the dart's tip.
+            name (str, optional): The name of the dart (e.g., "Bust Dart"). Defaults to None.
         """
         self.tip = dart_tip
+        self.name = name
         self.seam_line = seam_line
         self.leg1 = None
         self.leg2 = None

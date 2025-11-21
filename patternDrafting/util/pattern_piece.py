@@ -51,6 +51,16 @@ class PatternPiece:
               drawable_lines.extend([marking.leg1, marking.leg2])
       return drawable_lines
 
+  def get_marking_by_name(self, name):
+      """
+      Finds a marking object (Line or Dart) in the marking_lines list by its name.
+      """
+      for marking in self.marking_lines:
+          if hasattr(marking, 'name') and marking.name == name:
+              return marking
+      return None
+
+
   def get_bounding_box(self):
     """
     Calculates the bounding box that encompasses all lines in this piece.
