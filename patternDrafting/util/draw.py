@@ -21,26 +21,7 @@ def draw_pattern(
       output: A boolean to control if the image is saved to a file.
     """
     # --- 1. Calculate Layout ---
-    # Simple horizontal side-by-side layout
-    layouts = []
-    buffer_in = max(SPACING, seam_allowance * 1.5)
-    total_height_in = 0
-    current_x_in = buffer_in
-    for piece in pattern_pieces:
-        min_x, min_y, max_x, max_y = piece.get_bounding_box()
-        piece_width = max_x - min_x
-        piece_height = max_y - min_y
-        
-        # The offset positions the top-left of the piece's bounding box
-        offset_x = current_x_in - min_x
-        offset_y = buffer_in - min_y
-        layouts.append({'offset': (offset_x, offset_y), 'piece': piece})
-        
-        current_x_in += piece_width + buffer_in
-        total_height_in = max(total_height_in, piece_height)
-
-    canvas_width_in = current_x_in
-    canvas_height_in = total_height_in + 2 * buffer_in
+    layouts, canvas_width_in, canvas_height_in = get_layout(pattern_pieces, seam_allowance)
 
     # Image dimensions in pixels
     img_width_px = round(canvas_width_in * scale)
@@ -110,6 +91,32 @@ def draw_pattern(
 
     cv.imwrite(output_filepath, img)
 
+def get_layout(pattern_pieces, seam_allowance):
+    # Simple horizontal side-by-side layout
+    layouts = []
+    buffer_in = max(SPACING, seam_allowance * 1.5)
+    current_x = buffer_in
+    largest_y = buffer_in
+
+    for piece in pattern_pieces:
+        min_x, min_y, max_x, max_y = piece.get_bounding_box()
+        piece_width = max_x - min_x
+
+        if largest_y < max_y:
+            largest_y = max_y
+
+        print(f"Piece '{piece.name}' has top y {min_y} inches.")
+        
+        # The offset positions the top-left of the piece's bounding box
+        offset_x = current_x - min_x
+        offset_y = buffer_in - min_y
+        print(f"Offset for piece '{piece.name}': ({offset_x}, {offset_y})")
+        layouts.append({'offset': (offset_x, offset_y), 'piece': piece})
+        
+        current_x += piece_width + buffer_in
+
+    return layouts, current_x, largest_y + buffer_in
+
 
 def _draw_label(img, piece, pattern_name, scale, offset):
     """Draws the name, pattern name, and date on a pattern piece."""
@@ -128,11 +135,9 @@ def _draw_label(img, piece, pattern_name, scale, offset):
     w = round(w_in * scale)
     h = round(h_in * scale)
 
-    print(f"Drawing label for piece '{piece.name}' at ({x}, {y}) with size ({w}, {h}).")
-    print(f"Original label box: ({x_in}, {y_in}, {w_in}, {h_in})")
-    print(f"Offset: {offset}")
-
     if DEBUG:
+
+        print(f"Drawing label for piece '{piece.name}' at ({x}, {y}) with size ({w}, {h}).")
         # Draw the debug visualizations
         piece_contour = piece.get_outline_contour(scale=scale)
         min_x_in, min_y_in, _, _ = piece.get_bounding_box()

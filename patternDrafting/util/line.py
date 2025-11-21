@@ -133,3 +133,41 @@ class Line:
     self.points = self._clip_line(min_y, lambda p: p[1] >= min_y, get_x_intersect(min_y))
     self.points = self._clip_line(max_y, lambda p: p[1] <= max_y, get_x_intersect(max_y))
     return self
+
+  def get_intersection(self, other_line):
+      """
+      Finds the intersection point between this line and another line.
+      This handles intersections between two straight lines or a straight line and a polyline.
+
+      Args:
+          other_line (Line): The line to check for intersection with.
+
+      Returns:
+          tuple: The (x, y) coordinates of the intersection, or None if no intersection exists.
+      """
+      # This implementation assumes `other_line` is a straight line segment.
+      # It checks for intersection against all segments of `self`.
+      if len(other_line.points) != 2:
+          return None # Can only find intersection with a straight line.
+
+      p1, p2 = other_line.points[0], other_line.points[1]
+      x1, y1 = p1
+      x2, y2 = p2
+
+      line_segments = self.get_render_points()
+      for i in range(len(line_segments) - 1):
+          p3, p4 = line_segments[i], line_segments[i+1]
+          x3, y3 = p3
+          x4, y4 = p4
+
+          denominator = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+          if denominator == 0:
+              continue # Lines are parallel
+
+          t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denominator
+          u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denominator
+
+          if 0 <= t <= 1 and 0 <= u <= 1:
+              # Intersection point
+              return (x1 + t * (x2 - x1), y1 + t * (y2 - y1))
+      return None
