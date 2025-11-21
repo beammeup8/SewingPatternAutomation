@@ -49,7 +49,7 @@ def draw_pattern(
         # Draw internal marking lines (like darts) with the main pattern line style
         draw_lines(
             img,
-            piece.marking_lines,
+            piece.get_drawable_marking_lines(),
             LINE_COLOR,
             scale=scale,
             offset=offset,

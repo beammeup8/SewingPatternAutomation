@@ -1,4 +1,5 @@
 from util.line import Line
+from util.dart import Dart
 import math
 import cv2 as cv
 import numpy as np
@@ -35,7 +36,20 @@ class PatternPiece:
     """
     Returns a single list containing all lines from all types.
     """
-    return self.body_lines + self.drafting_lines + self.pattern_lines + self.marking_lines + self.cut_lines
+    return self.body_lines + self.drafting_lines + self.pattern_lines + self.get_drawable_marking_lines() + self.cut_lines
+
+  def get_drawable_marking_lines(self):
+      """
+      Returns a flat list of all Line objects that should be drawn for markings.
+      This handles cases where markings are stored as Dart objects or other structures.
+      """
+      drawable_lines = []
+      for marking in self.marking_lines:
+          if isinstance(marking, Line):
+              drawable_lines.append(marking)
+          elif isinstance(marking, Dart):
+              drawable_lines.extend([marking.leg1, marking.leg2])
+      return drawable_lines
 
   def get_bounding_box(self):
     """

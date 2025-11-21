@@ -95,8 +95,9 @@ def draft(measurements, garment_specs):
     
     # Add bust apex cross mark
     apex_mark_size = 0.25
-    front_marking_lines.append(Line.horizontal(bust_point_y, bust_point_x - apex_mark_size, bust_point_x + apex_mark_size))
-    front_marking_lines.append(Line.vertical(bust_point_x, bust_point_y - apex_mark_size, bust_point_y + apex_mark_size))
+    apex_horizontal = [(bust_point_x - apex_mark_size, bust_point_y), (bust_point_x + apex_mark_size, bust_point_y)]
+    apex_vertical = [(bust_point_x, bust_point_y - apex_mark_size), (bust_point_x, bust_point_y + apex_mark_size)]
+    front_marking_lines.extend([Line(apex_horizontal), Line(apex_vertical)])
 
     front_body_lines.append(Line.horizontal(bust_point_y, 0, front_width))
 
@@ -114,16 +115,17 @@ def draft(measurements, garment_specs):
     bust_dart_center_x = side_seam_line.get_x_for_y(bust_dart_center_y)
     bust_dart = Dart(side_seam_line, (bust_dart_center_x, bust_dart_center_y), bust_dart_intake, (dart_tip_x, bust_point_y))
     if bust_dart:
-        front_marking_lines.extend([bust_dart.leg1, bust_dart.leg2])
+        front_marking_lines.append(bust_dart)
 
     # Waist Dart
     # The remaining 2/3 of suppression goes into the vertical waist dart
     waist_dart_width = total_front_waist_suppression * (2/3)
     dart_center_x = bust_point_x
     dart_tip_y = bust_point_y + 1.5
-    waist_dart = Dart(Line.horizontal(center_front_y, 0, front_waist_x), (dart_center_x, center_front_y), waist_dart_width, (dart_center_x, dart_tip_y))
-    if waist_dart:
-        front_marking_lines.extend([waist_dart.leg1, waist_dart.leg2])
+    hem_line_for_dart = Line.horizontal(center_front_y, 0, front_waist_x)
+    waist_dart = Dart(hem_line_for_dart, (dart_center_x, center_front_y), waist_dart_width, (dart_center_x, dart_tip_y))
+    if waist_dart and waist_dart.leg1:
+        front_marking_lines.append(waist_dart)
 
     front_piece = PatternPiece(name="Front Bodice", body_lines=front_body_lines, pattern_lines=front_lines, drafting_lines=front_drafting_lines, marking_lines=front_marking_lines)
     front_piece.add_grainline()
@@ -194,8 +196,8 @@ def draft(measurements, garment_specs):
         shoulder_midpoint = shoulder_line.get_midpoint()
         shoulder_dart_tip = shoulder_line.get_perpendicular_point(shoulder_midpoint, dart_length)
         shoulder_dart = Dart(shoulder_line, shoulder_midpoint, shoulder_dart_intake, shoulder_dart_tip)
-        if shoulder_dart and shoulder_dart.leg1:
-            back_marking_lines.extend([shoulder_dart.leg1, shoulder_dart.leg2])
+        if shoulder_dart:
+            back_marking_lines.append(shoulder_dart)
         
         # The waist dart takes the remaining 2/3 of waist suppression.
         back_waist_dart_width = total_back_waist_suppression * (2/3)
@@ -210,14 +212,66 @@ def draft(measurements, garment_specs):
     # Create the waist dart legs to be passed to the truing function
     back_dart_center_x = back_width / 2
     back_dart_tip_y = armscye_depth + 1
-    back_waist_dart = Dart(Line.horizontal(center_back_y, 0, back_waist_x), (back_dart_center_x, center_back_y), back_waist_dart_width, (back_dart_center_x, back_dart_tip_y))
+    back_hem_for_dart = Line.horizontal(center_back_y, 0, back_waist_x)
+    back_waist_dart = Dart(back_hem_for_dart, (back_dart_center_x, center_back_y), back_waist_dart_width, (back_dart_center_x, back_dart_tip_y))
     if back_waist_dart:
-        back_marking_lines.extend([back_waist_dart.leg1, back_waist_dart.leg2])
+        back_marking_lines.append(back_waist_dart)
 
     back_piece = PatternPiece(name="Back Bodice", body_lines=back_body_lines, pattern_lines=back_lines, drafting_lines=back_drafting_lines, marking_lines=back_marking_lines)
     back_piece.add_grainline()
     back_piece.add_seam_allowance(garment_specs.seam_allowance)
     pattern_pieces.append(back_piece)
+
+    # --- TRUE SIDE SEAMS ---
+    # This is done after both pieces are drafted to ensure all lines are available.
+    # The goal is to make the front side seam length match the back side seam length
+    # when the front bust dart is closed.
+
+    # 1. Get the back side seam line from the back piece and calculate its length.
+    # It's the line connecting the armscye to the waist.
+    back_side_seam = back_piece.pattern_lines[-4] # Based on current append order
+    back_side_seam_length = math.dist(back_side_seam.points[0], back_side_seam.points[1])
+
+    # 2. Get the front side seam and bust dart from the front piece.
+    front_side_seam = front_piece.pattern_lines[-2]
+    # Find the bust dart object in the marking lines
+    front_bust_dart = next((m for m in front_piece.marking_lines if isinstance(m, Dart) and m.seam_line == front_side_seam), None)
+    if not front_bust_dart:
+        print("Warning: Could not find front bust dart for truing side seams.")
+        return pattern_pieces
+
+    # 3. Calculate the "closed" length of the front side seam.
+    side_seam_top_point = front_side_seam.points[0]
+    side_seam_bottom_point = front_side_seam.points[1]
+    dart_leg1_start = front_bust_dart.leg1.points[0]
+    dart_leg2_start = front_bust_dart.leg2.points[0]
+
+    # Ensure leg1 is the upper leg for clarity
+    upper_dart_leg_start = dart_leg1_start if dart_leg1_start[1] < dart_leg2_start[1] else dart_leg2_start
+    lower_dart_leg_start = dart_leg2_start if dart_leg1_start[1] < dart_leg2_start[1] else dart_leg1_start
+
+    upper_seam_length = math.dist(side_seam_top_point, upper_dart_leg_start)
+    lower_seam_length = math.dist(lower_dart_leg_start, side_seam_bottom_point)
+    closed_front_seam_length = upper_seam_length + lower_seam_length
+
+    # 4. Calculate the difference and adjust the front waist point.
+    length_difference = closed_front_seam_length - back_side_seam_length
+    adjusted_front_waist_y = side_seam_bottom_point[1] - length_difference
+
+    # 5. Redefine the front side seam, hem, and waist dart with the adjusted point.
+    front_side_seam.points[1] = (side_seam_bottom_point[0], adjusted_front_waist_y)
+    
+    front_hem = front_piece.pattern_lines[-1]
+    front_hem.points = [(0, adjusted_front_waist_y), (front_side_seam.points[1][0], adjusted_front_waist_y)]
+
+    # Find and update the waist dart
+    front_waist_dart = next((m for m in front_piece.marking_lines if isinstance(m, Dart) and m.seam_line.points[0][1] == center_front_y), None)
+    if not front_waist_dart:
+        print("Warning: Could not find front waist dart for truing side seams.")
+        return pattern_pieces
+    front_waist_dart.seam_line.points = front_hem.points # Update the dart's seam line reference
+    front_waist_dart.leg1.points[0] = (front_waist_dart.leg1.points[0][0], adjusted_front_waist_y)
+    front_waist_dart.leg2.points[0] = (front_waist_dart.leg2.points[0][0], adjusted_front_waist_y)
 
     return pattern_pieces
 
