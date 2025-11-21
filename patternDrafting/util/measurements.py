@@ -31,7 +31,7 @@ class Measurements:
         self.back_bust = bust_specs.get('back bust', self.bust / 2)
         self.bust_point_separation = bust_specs.get('apex to apex', 0)
         self.across_back = bust_specs.get('back width', self.upper_bust / 2)
-        self.across_front = bust_specs.get('front upper bust', self.upper_bust / 2)
+        self.front_upper_bust = bust_specs.get('front upper bust', self.upper_bust / 2)
 
         # Nested 'waist' measurements
         waist_specs = kwargs.get('waist', {})

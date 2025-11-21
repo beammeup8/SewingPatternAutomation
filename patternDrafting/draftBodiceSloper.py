@@ -50,7 +50,7 @@ def draft(measurements, garment_specs):
 
     # Armscye
     armscye_depth = measurements.shoulder_to_armpit - 1
-    across_chest = measurements.across_front / 2
+    across_chest = measurements.front_upper_bust / 2
     armscye_guide_y = armscye_depth / 2
 
     # Add drafting lines for reference points
