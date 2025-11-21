@@ -48,7 +48,7 @@ class PatternPiece:
           if isinstance(marking, Line):
               drawable_lines.append(marking)
           elif isinstance(marking, Dart):
-              drawable_lines.extend([marking.leg1, marking.leg2])
+              drawable_lines.extend(marking.get_lines())
       return drawable_lines
 
   def get_marking_by_name(self, name):

@@ -49,6 +49,16 @@ class Dart:
             # Fallback for curved lines or more complex scenarios
             print("Warning: Dart creation on curved lines is not fully implemented.")
     
+    def get_lines(self):
+        """
+        Returns a list of all Line objects that constitute the dart.
+        This includes the main legs and any extended lines for truing.
+        """
+        lines = []
+        if self.leg1: lines.append(self.leg1)
+        if self.leg2: lines.append(self.leg2)
+        return lines
+
     def extend_legs_to_cut_line(self, cut_lines):
         """
         Extends the dart legs from the tip outwards to intersect with the cut line.
