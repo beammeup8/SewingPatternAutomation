@@ -32,12 +32,6 @@ class PatternPiece:
     self._contour_cache = {}
     self._bounding_box_cache = None
 
-  def get_all_lines(self):
-    """
-    Returns a single list containing all lines from all types.
-    """
-    return self.body_lines + self.drafting_lines + self.pattern_lines + self.get_drawable_marking_lines() + self.cut_lines
-
   def get_drawable_marking_lines(self):
       """
       Returns a flat list of all Line objects that should be drawn for markings.
