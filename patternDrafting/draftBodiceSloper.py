@@ -26,7 +26,8 @@ def draft(measurements, garment_specs):
     # Foundational lines
     # Add extra length to the front to accommodate the bust.
     # TODO: This should ideally be based on a direct front-waist measurement.
-    bust_projection_difference = measurements.shoulder_to_bust - measurements.back_bust_height
+    front_bust_height = measurements.shoulder_to_bust
+    bust_projection_difference = front_bust_height - measurements.back_bust_height
     center_front_y = measurements.shoulder_to_waist + bust_projection_difference
 
     front_width = measurements.front_bust / 2 + garment_specs.bust_ease / 2
@@ -58,6 +59,7 @@ def draft(measurements, garment_specs):
     front_drafting_lines.append(Line.vertical(across_chest, 0, center_front_y))
     front_drafting_lines.append(Line.vertical(front_width, 0, center_front_y))
     front_body_lines.append(Line.horizontal(armscye_guide_y, 0, across_chest))
+    front_drafting_lines.append(Line.horizontal(measurements.shoulder_to_bust, 0, front_width))
     
     # The top of the armscye is a straight line perpendicular to the shoulder seam.
     # TODO: The length of this straight part could be a specific measurement.
@@ -80,7 +82,7 @@ def draft(measurements, garment_specs):
     front_waist_x = front_width - side_seam_suppression
 
     # Side Seam
-    side_seam_line = Line([(front_width, armscye_depth), (front_waist_x, center_front_y)])
+    side_seam_line = Line([(front_width, armscye_depth), (front_width, front_bust_height), (front_waist_x, center_front_y)])
     front_lines.append(side_seam_line)
     
     # Hem

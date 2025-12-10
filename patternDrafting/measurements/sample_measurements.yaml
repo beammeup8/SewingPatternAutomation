@@ -5,8 +5,8 @@ shoulders:
   nape to shoulder blade: 3
   armscye depth: 10
   neck circumference: 19
-  side neck rise: 0.5 # measurement from the nape of the neck to the top of the bone there
-  shoulder slope: 1.75 # vertical measurement from nape of neck to height of shoulder
+  side neck rise: 0.5 # vertical measurement from nape of neck to height of shoulder
+  shoulder slope: 1.75 # vertical difference in height of shoulder
 bust: 
   full bust: 56
   front bust: 33
